@@ -14,6 +14,31 @@
 ;;;; ====
 
 
+
+;;; ---
+;;; - Util
+;;; ---
+
+(defn vertices-vec->map
+  [vertices]
+  (loop [xs vertices
+         acc []]
+    (if-let [x (first xs)]
+      (let [[lat lon] x]
+        (recur (rest xs) (conj acc {:lat lat :lon lon})))
+      acc)))
+
+(defn prepare-polygon
+  [vertices]
+  (let [head (first vertices)]
+    (loop [xs (rest vertices)
+           trail head
+           acc []]
+      (if-let [x (first xs)]
+        (recur (rest xs) x (conj acc [trail x]))
+        (conj acc [trail head])))))
+
+
 ;;; ===
 ;;; - Bearing
 ;;; ---
@@ -171,7 +196,7 @@
 ;;; - Distance from point to polygon
 ;;; ---
 
-(defn min-distance-to-polygon
+(defn -min-distance-to-polygon
   [pt vertices]
   (loop [xs vertices
          acc Integer/MAX_VALUE]
@@ -181,7 +206,16 @@
         (recur (rest xs) (if (< dist acc) dist acc)))
       acc)))
 
-(defn within-distance-to-polygon?
+(defn min-distance-to-polygon
+  [pts vertices]
+  (let [vts (prepare-polygon (vertices-vec->map vertices))]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (-min-distance-to-polygon pt vts)))
+        acc))))
+
+(defn -within-distance-to-polygon?
   [pt limit vertices]
   (loop [xs vertices]
     (if-let [x (first xs)]
@@ -190,7 +224,14 @@
           (recur (rest xs))
           true)))))
 
-
+(defn within-distance-to-polygon?
+  [pts limit vertices]
+  (let [vts (prepare-polygon (vertices-vec->map vertices))]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (-within-distance-to-polygon? pt vts)))
+        acc))))
 
 ;; ========================
 ;;
