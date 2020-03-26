@@ -1,6 +1,7 @@
 (ns geo-yoots.sphere.core-test
   (:require [clojure.test :refer :all]
             [geo-yoots.constants :as geo.const]
+            [geo-yoots.util.core :as geo.util]
             [geo-yoots.sphere.core :as geo.sphere]))
 
 
@@ -25,7 +26,7 @@
     (if-let [x (first xs)]
       ;; Convert actual output to nautical miles
       (let [[exp act] x]
-        (compare-float exp (* act geo.const/km->nm) :scale 2)
+        (compare-float exp (* act geo.const/km->nm) :scale 1)
         (recur (rest xs))))))
 
 
@@ -41,8 +42,8 @@
   (list
     [ 1.0   0.0]
     [ 0.0   1.0]
-    [-1.0,  0.0]
-    [ 0.0, -1.0]))
+    [-1.0  0.0]
+    [ 0.0 -1.0]))
 
 (def points
   (list
@@ -53,14 +54,24 @@
     [-0.956165 -2.189761]
     [ 0.000000 -2.004207]))
 
+(def expected
+  (list
+    54.20923531
+    54.55440421
+    45.65898913
+    49.52030311
+    91.6410489
+    60.29313032))
+
+
 ;; ---
 ;; Case 2
 ;; ---
 
 (def polygon-2
   (list
-    [ 1.0   0.0]
-    [ 0.0   1.0]
+    [ 1.0  0.0]
+    [ 0.0  1.0]
     [-1.0  0.0]
     [ 0.0 -1.0]
     [0.410995 0.326637]))
@@ -88,11 +99,38 @@
 (deftest bearing-test
   )
 
+(deftest alongtrack-distance-test
+  (testing "GC 1"
+    (let [ct-dist (geo.sphere/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                                 {:lat -1.0 :lon 0.0})
+          d13     (geo.util/haversine {:lat 0.0 :lon 1.0} {:lat -1.089144 :lon 1.077389})]
+      (compare-float
+        (* geo.const/km->nm (geo.sphere/alongtrack-distance2 d13 ct-dist))
+        43.14639))))
+
 (deftest crosstrack-distance-test
-  )
+  (testing "GC 1"
+    (compare-float
+      (Math/abs (* geo.const/km->nm
+                  (geo.sphere/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                                 {:lat -1.0 :lon 0.0})))
+      49.52030311 :scale 1)
+    (compare-float
+      (Math/abs (geo.sphere/crosstrack-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
+                                                                  {:lat 50.5 :lon 80.5}))
+      479.6 :scale 1)))
 
 (deftest crossarc-distance-test
-  )
+  (testing "GC 1"
+    (compare-float
+      (Math/abs (* geo.const/km->nm
+                  (geo.sphere/crossarc-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                               {:lat -1.0 :lon 0.0})))
+      49.52030311 :scale 1)
+    (compare-float
+      (Math/abs (geo.sphere/crossarc-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
+                                                                {:lat 50.5 :lon 80.5}))
+      479.6 :scale 1)))
 
 ;; ---
 ;; - POINTS
@@ -121,7 +159,8 @@
 
 (deftest point-to-polygon-distance-test
   (testing "Prime Meridian Simple Polygon 1"
-    )
+    (let [actual (geo.sphere/min-distance-to-polygon points polygon)]
+      (compare-distance expected actual)))
 
   (testing "Prime Meridian Simple Polygon 2"
     (let [actual (geo.sphere/min-distance-to-polygon points-2 polygon-2)]

@@ -15,7 +15,6 @@
 ;; - Earthy Things
 ;; ---
 
-(def earth-radius 6372.8)            ; kilometers
-
-(def earth-radius-meters (* earth-radius km->meters))
+(def earth-radius 6372.8)        ; kilometers
+(def earth-radius-meters         (* earth-radius km->meters))
 (def earth-radius-nautical-miles (* earth-radius-meters meters->nm))

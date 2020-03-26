@@ -1,6 +1,6 @@
 (ns geo-yoots.sphere.core
-  (:require [geo-yoots.constants :as const]
-            [geo-yoots.util.core :as util]))
+  (:require [geo-yoots.constants :as geo.const]
+            [geo-yoots.util.core :as geo.util]))
 
 
 
@@ -39,13 +39,15 @@
         (conj acc [trail head])))))
 
 
+
 ;;; ===
 ;;; - Bearing
 ;;; ---
 ;;;
 ;;; Formula:	θ = atan2( sin Δλ ⋅ cos φ2 , cos φ1 ⋅ sin φ2 − sin φ1 ⋅ cos φ2 ⋅ cos Δλ )
-;;;   where	φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
-;;;
+;;;   where:
+;;;     φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
+;;; ---
 
 (defn bearing
   [{lon1 :lon lat1 :lat} {lon2 :lon lat2 :lat}]
@@ -68,23 +70,25 @@
         (mod 360))))
 
 
+
 ;;; ===
 ;;; - Cross Track Distance
 ;;; ----
 ;;;
 ;;; Formula:    dxt = asin( sin(δ13) ⋅ sin(θ13−θ12) ) ⋅ R
-;;;  where   
-;;;
-;;; δ13 is (angular) distance from start point to third point
-;;;   * d13 / R
-;;; θ13 is (initial) bearing from start point to third point
-;;; θ12 is (initial) bearing from start point to end point
-;;; R is the earth’s radius
+;;;  where:
+;;;    δ13 is (angular) distance from start point to third point
+;;;     * d13 / R
+;;;    θ13 is (initial) bearing from start point to third point
+;;;    θ12 is (initial) bearing from start point to end point
+;;;    R is the earth’s radius
+;;; ---
 
+;; TODO: Use `crosstrack-distance2` for impl
 (defn crosstrack-distance
   [pt l1 l2 & {:keys [radius]
-               :or {radius const/earth-radius}}]
-  (let [dist (util/haversine l1 pt :radius radius)
+               :or {radius geo.const/earth-radius}}]
+  (let [dist (geo.util/haversine l1 pt :radius radius)
         d13  (/ dist radius)]
     #_(println (format "D1->D3=%s" dist))
     (* (Math/asin (* (Math/sin d13)
@@ -94,49 +98,152 @@
 
 
 ;;; ===
+;;; - Along Track Distance
+;;; ---
+;;;
+;;; Formula: dat = acos( cos(δ13) / cos(δxt) ) ⋅ R
+;;;   where:
+;;;     δ13 is (angular) distance from start point to third point
+;;;     δxt is (angular) cross-track distance
+;;;     R is the earth’s radius
+;;;
+;;; ---
+
+(defn alongtrack-distance2
+  "Computes alongtrack distance.
+  Uses precomputed distance and crosstrack values."
+  [dist13 ct-dist & {:keys [radius]
+              :or {radius geo.const/earth-radius}}]
+  (let [d13 (/ dist13 radius)]
+    (* (Math/acos (/ (Math/cos d13) (Math/cos (/ ct-dist radius)))) radius)))
+
+;;; ===
 ;;; - Cross Arc Distance
 ;;; ---
 ;;;
-;;; TODO: Explain algorithm
+;;; Variant of cross track distance.  Defines minimun distance to great circle arc - as opposed to
+;;; complete great cirle spanning sphere.
 ;;;
+;;;
+;;; p1: Great cirle point a
+;;; p2: Great cirle point b
+;;; p3: Point whose distance to edge(a,b) we want to minimize
+;;; p4: Great circle intersection point
+;;;
+;;;
+;;; Case 1:
+;;; ---
+;;; Relative bearing is obtuse.
+;;;
+;;;  p3
+;;;  v
+;;;  o
+;;;   `     bearing(p1->p3) - bearing(p1->p2) is obtuse
+;;;     `      |
+;;;       `    v
+;;;         `o--------------o
+;;;          ^               ^
+;;;          p1              p2
+;;;
+;;; Use |p3 -> p1|
+;;;
+;;; Case 2:
+;;; ---
+;;; i. Relative bearing is actue and p4 falls w/i arc.
+;;;
+;;;                p3
+;;;                 v
+;;;                 o
+;;;               ` |
+;;;             `   |
+;;;           `     | <- crosstrack distance
+;;;         `       |
+;;;       `         |
+;;;     `           |
+;;;   o-------------o------o
+;;;   ^             ^      ^
+;;;   p1            p4     p2
+;;;
+;;; Use crosstrack distance
+;;;
+;;; ii. Relative bearing is acute and p4 falls outside arc.
+;;;
+;;;
+;;;                   p3
+;;;                   v
+;;;                   o
+;;;                 `.|
+;;;               ` . |
+;;;             `  .  |
+;;;           `   .   | <- crosstrack distance
+;;;         `    .    |
+;;;       `     .     |
+;;;     `      .      |
+;;;   o-------o       o
+;;;   ^       ^       ^
+;;;   p1      p2      p4
+;;;
+;;;
+;;;  Use |p3 -> p2|
+;;;
+;;; ---
 
-(defn -crosstrack-distance2
+
+
+(defn crosstrack-distance2
   "Calculate crosstrack distance.
   Uses precomputed bearing and distance values"
   [dist13 b13 b12 & {:keys [radius]
-                     :or {radius const/earth-radius}}]
+                     :or {radius geo.const/earth-radius}}]
   (let [d13  (/ dist13 radius)]
     #_(println (format "D1->D3=%s" dist))
     (* (Math/asin (* (Math/sin d13)
                      (Math/sin (- b13 b12))))
        radius)))
 
-(defn distance-to-crosstrack-intersection
-  "Calculates distance between GC point and crosstrack intersection point"
-  [dist13 ct-dist & {:keys [radius]
-                     :or {radius const/earth-radius}}]
-  (* (Math/acos (/ (Math/cos (/ dist13 radius)) (Math/cos (/ ct-dist radius)))) radius))
+
+(defn bearing-diff
+  [b13 b12]
+  (let [diff (Math/abs (- b13 b12))]
+    (if (> diff Math/PI)
+      (- (* 2 Math/PI) diff) diff)))
 
 (defn crossarc-distance
   "Calculates crosstrack distance"
   [pt l1 l2 & {:keys [radius]
-               :or {radius const/earth-radius}}]
+               :or {radius geo.const/earth-radius}}]
   (let [b12    (bearing l1 l2)
         b13    (bearing l1 pt)
-        dist13 (util/haversine l1 pt :radius radius)]
-    (if (> (Math/abs (- b13 b12)) (/ Math/PI 2))
+        dist13 (geo.util/haversine l1 pt :radius radius)
+        diff   (bearing-diff b12 b13)]
+    #_(println (format "Relative Bearing=%s" (Math/toDegrees diff)))
+    (if (> diff (/ Math/PI 2))
       ;; Relative bearing is obtuse
       dist13
-      (let [ct-dist (-crosstrack-distance2 dist13 b13 b12 :radius radius)
-            d12     (util/haversine l1 l2 :radius radius)
-            d14     (distance-to-crosstrack-intersection dist13 ct-dist :radius radius)]
+      (let [ct-dist (crosstrack-distance2 dist13 b13 b12 :radius radius)
+            d12     (geo.util/haversine l1 l2 :radius radius)
+            d14     (alongtrack-distance2 dist13 (Math/abs ct-dist) :radius radius)]
         ;; Is point beyound arc
+        #_(println (format "D14=%s, D12=%s"
+          #_(* geo.const/km->nm (crosstrack-distance pt l1 l2)) #_(* geo.const/km->nm ct-dist) d14 d12))
+
+        ;; TODO: Subject to edge case errors i.e. d12 ~= d13: Fix!!!
 	(if (> d14 d12)
           ;; Pt is beyond arc
-          (util/haversine l2 pt :radius radius)
+          (do
+            #_(println "PT beyond ARC")
+            #_(println (format "PT beyond ARC: CT=%s, HAV=%s"
+              (* geo.const/km->nm (Math/abs ct-dist)) (* geo.const/km->nm (geo.util/haversine l2 pt :radius radius))))
+            (geo.util/haversine l2 pt :radius radius))
 
           ;; Pt w/i arc, use crosstrack distance
-	  (Math/abs ct-dist))))))
+          (do
+            #_(println "PT within ARC")
+            #_(println (format "PT within ARC: CT=%s, HAV=%s"
+              (* geo.const/km->nm (Math/abs ct-dist)) (* geo.const/km->nm (geo.util/haversine l2 pt :radius radius))))
+	    (Math/abs ct-dist)))))))
+
+
 
 
 ;;; ==========================
@@ -154,14 +261,12 @@
 
 (defn distance-to-point
   [p1 p2]
-  (util/haversine p1 p2))
+  (geo.util/haversine p1 p2))
 
 
 ;;; ===
 ;;; - Distance from point to line
 ;;; ---
-;;;
-;;;
 
 (defn min-distance-to-line
   [pt vertices]
@@ -189,7 +294,7 @@
 
 (defn distance-to-cirlce
   [pt center radius]
-  (- (util/haversine pt center) radius))
+  (- (geo.util/haversine pt center) radius))
 
 
 ;;; ===
@@ -232,61 +337,3 @@
       (if-let [pt (first xs)]
         (recur (rest xs) (conj acc (-within-distance-to-polygon? pt vts)))
         acc))))
-
-;; ========================
-;;
-;; **  Main Test Driver  **
-;;
-;; ========================
-
-(defn bearing-test
-  []
-  (let [A {:lon  105.2833 :lat  40.0167}
-        B {:lon -137.65   :lat -33.9333}
-        C {:lon   45      :lat  35}
-        D {:lon  135      :lat  35}
-        E {:lat 39.099912 :lon -94.581213}
-        F {:lat 38.627089 :lon -90.200203}
-        G {:lat 55.739399 :lon 37.592572}
-        H {:lat 55.735632 :lon 37.678367}]
-    (println (normalized-bearing A B))
-    #_(println (normalized-bearing B A))
-    (println (normalized-bearing C D))
-    #_(println (normalized-bearing D C))
-    (println (normalized-bearing E F))
-    #_(println (normalized-bearing F E))
-    (println (normalized-bearing G H))))
-
-(defn test-crosstrack
-  []
-  (let [pt {:lat 17.688132 :lon 83.299026}
-        A  {:lat 17.686309 :lon 83.291671}
-        B  {:lat 17.690634 :lon 83.292155}
-        C  {:lat 17.686165 :lon 83.283841}
-        D  {:lat 17.687492 :lon 83.277584}
-        E  {:lat 17.695138 :lon 83.267556}
-        F  {:lat 17.708919 :lon 83.261631}
-        G  {:lat 17.714786 :lon 83.269032}
-        H  {:lat 17.713927 :lon 83.272998}
-        I  {:lat 17.706820 :lon 83.277726}]
-    (println "Crosstrack Distance")
-    (println (crosstrack-distance pt A B))
-    (println (crosstrack-distance pt A C))
-    (println (crosstrack-distance pt C D))
-    (println (crosstrack-distance pt D E))
-    (println "Crossarc Distance")
-    (println (crossarc-distance pt A B))
-    (println (crossarc-distance pt A C))
-    (println (crossarc-distance pt C D))
-    (println (crossarc-distance pt D E))
-    (println (crossarc-distance pt E F))
-    (println (crossarc-distance pt F G))
-    (println (crossarc-distance pt G H))
-    (println (crossarc-distance pt H I))))
-
-
-(defn -main
-  [& args]
-  (let []
-    (bearing-test)
-    (test-crosstrack)))
