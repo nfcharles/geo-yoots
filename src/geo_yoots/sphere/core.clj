@@ -28,15 +28,25 @@
         (recur (rest xs) (conj acc {:lat lat :lon lon})))
       acc)))
 
+(defn prepare-polyline
+  [vertices]
+  (let [start (first vertices)]
+    (loop [xs (rest vertices)
+           a start
+           acc []]
+      (if-let [b (first xs)]
+        (recur (rest xs) b (conj acc [a b]))
+        acc))))
+
 (defn prepare-polygon
   [vertices]
-  (let [head (first vertices)]
+  (let [start (first vertices)]
     (loop [xs (rest vertices)
-           trail head
+           a start
            acc []]
-      (if-let [x (first xs)]
-        (recur (rest xs) x (conj acc [trail x]))
-        (conj acc [trail head])))))
+      (if-let [b (first xs)]
+        (recur (rest xs) b (conj acc [a b]))
+        (conj acc [a start])))))
 
 
 
@@ -161,8 +171,13 @@
 ;;;       `         |
 ;;;     `           |
 ;;;   o-------------o------o
-;;;   ^             ^      ^
-;;;   p1            p4     p2
+;;;   ^      ^      ^      ^
+;;;   p1     |      p4     p2
+;;;          |
+;;;          |
+;;;          -
+;;;   alongtrack distance
+;;;
 ;;;
 ;;; Use crosstrack distance
 ;;;
@@ -183,6 +198,9 @@
 ;;;   ^       ^       ^
 ;;;   p1      p2      p4
 ;;;
+;;;   <--------------->
+;;;           ^
+;;;           alongtrack distance
 ;;;
 ;;;  Use |p3 -> p2|
 ;;;
@@ -229,11 +247,11 @@
 
 
 
-;;; ==========================
+;;; ================================
 ;;;
-;;; **  DISTANCE FUNCTIONS  **
+;;; **  SHAPE DISTANCE FUNCTIONS  **
 ;;;
-;;; ==========================
+;;; ================================
 
 
 ;; ===
@@ -251,7 +269,7 @@
 ;;; - Distance from point to line
 ;;; ---
 
-(defn min-distance-to-line
+(defn -min-distance-to-polyline
   [pt vertices]
   (loop [xs vertices
          acc Integer/MAX_VALUE]
@@ -261,23 +279,62 @@
         (recur (rest xs) (if (< dist acc) dist acc)))
       acc)))
 
-(defn within-distance-to-line?
-  [pt limit vertices]
+(defn min-distance-to-polyline
+  [pts vertices]
+  (let [vts (prepare-polyline (vertices-vec->map vertices))]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (-min-distance-to-polyline pt vts)))
+        acc))))
+
+(defn -within-distance-to-polyline?
+  [limit pt vertices]
   (loop [xs vertices]
     (if-let [x (first xs)]
       (let [[arc-p1 arc-p2] x]
-        (if (> (crossarc-distance pt arc-p1 arc-p2) limit)
-          (recur (rest xs))
-          true)))))
+        (if (<= (crossarc-distance pt arc-p1 arc-p2) limit)
+          true
+          (recur (rest xs))))
+      false)))
+
+(defn within-distance-to-polyline?
+  [limit pts vertices]
+  (let [vts (prepare-polyline (vertices-vec->map vertices))]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (-within-distance-to-polyline? limit pt vts)))
+        acc))))
+
 
 
 ;;; ===
 ;;; - Distance from point to circle
 ;;; ---
 
-(defn distance-to-cirlce
+(defn -distance-to-circle
   [pt center radius]
-  (- (geo.util/haversine pt center) radius))
+  (let [pt-to-center (geo.util/haversine pt center)]
+    (- (geo.util/haversine pt center) radius)))
+
+(defn distance-to-circle
+  [pts center radius]
+  (let [c {:lat (nth center 0) :lon (nth center 1)}]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (-distance-to-circle pt c radius)))
+        acc))))
+
+(defn within-distance-to-circle?
+  [limit pts center radius]
+  (let [c {:lat (nth center 0) :lon (nth center 1)}]
+    (loop [xs (vertices-vec->map pts)
+           acc []]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (conj acc (<= (-distance-to-circle pt c radius) limit)))
+        acc))))
 
 
 ;;; ===
@@ -304,19 +361,20 @@
         acc))))
 
 (defn -within-distance-to-polygon?
-  [pt limit vertices]
+  [limit pt vertices]
   (loop [xs vertices]
     (if-let [x (first xs)]
       (let [[arc-p1 arc-p2] x]
-        (if (> (crossarc-distance pt arc-p1 arc-p2) limit)
-          (recur (rest xs))
-          true)))))
+        (if (<= (crossarc-distance pt arc-p1 arc-p2) limit)
+          true
+          (recur (rest xs))))
+      false)))
 
 (defn within-distance-to-polygon?
-  [pts limit vertices]
+  [limit pts vertices]
   (let [vts (prepare-polygon (vertices-vec->map vertices))]
     (loop [xs (vertices-vec->map pts)
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-within-distance-to-polygon? pt vts)))
+        (recur (rest xs) (conj acc (-within-distance-to-polygon? limit pt vts)))
         acc))))
