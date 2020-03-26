@@ -135,8 +135,8 @@
 ;;; complete great cirle spanning sphere.
 ;;;
 ;;;
-;;; p1: Great cirle point a
-;;; p2: Great cirle point b
+;;; p1: Great circle point a
+;;; p2: Great circle point b
 ;;; p3: Point whose distance to edge(a,b) we want to minimize
 ;;; p4: Great circle intersection point
 ;;;

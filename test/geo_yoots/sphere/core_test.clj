@@ -74,6 +74,10 @@
 ;; ** CIRCLES **
 ;; ---
 
+;; ---
+;; - Case 1
+;; ---
+
 (def circle-1
   (hash-map
     :center [10.0108167 -83.09845]
@@ -148,6 +152,16 @@
   (list
     20.23665323
     10.7419377))
+
+;; --- 2.1
+
+(def pl-test-points-2-1
+  (list
+    [0.600741 0.424787]))
+
+(def pl-expected-2-1
+  (list
+    1.08127628))
 
 
 ;; ---
@@ -292,6 +306,10 @@
   (testing "Prime Meridian Simple Polygon 2"
     (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-2 polygon-2)]
       (compare-distance pl-expected-2 actual)))
+
+  (testing "Prime Meridian Simple Polygon 2 - 1"
+    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-2-1 polygon-2)]
+      (compare-distance pl-expected-2-1 actual :scale 2)))
 
   (testing "Complex Polygon 1"
     (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-3 polygon-3)]
