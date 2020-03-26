@@ -216,32 +216,15 @@
         b13    (bearing l1 pt)
         dist13 (geo.util/haversine l1 pt :radius radius)
         diff   (bearing-diff b12 b13)]
-    #_(println (format "Relative Bearing=%s" (Math/toDegrees diff)))
     (if (> diff (/ Math/PI 2))
       ;; Relative bearing is obtuse
       dist13
-      (let [ct-dist (crosstrack-distance2 dist13 b13 b12 :radius radius)
+      (let [ct-dist (Math/abs (crosstrack-distance2 dist13 b13 b12 :radius radius))
             d12     (geo.util/haversine l1 l2 :radius radius)
-            d14     (alongtrack-distance2 dist13 (Math/abs ct-dist) :radius radius)]
-        ;; Is point beyound arc
-        #_(println (format "D14=%s, D12=%s"
-          #_(* geo.const/km->nm (crosstrack-distance pt l1 l2)) #_(* geo.const/km->nm ct-dist) d14 d12))
-
-        ;; TODO: Subject to edge case errors i.e. d12 ~= d13: Fix!!!
+            d14     (alongtrack-distance2 dist13 ct-dist :radius radius)]
 	(if (> d14 d12)
-          ;; Pt is beyond arc
-          (do
-            #_(println "PT beyond ARC")
-            #_(println (format "PT beyond ARC: CT=%s, HAV=%s"
-              (* geo.const/km->nm (Math/abs ct-dist)) (* geo.const/km->nm (geo.util/haversine l2 pt :radius radius))))
-            (geo.util/haversine l2 pt :radius radius))
-
-          ;; Pt w/i arc, use crosstrack distance
-          (do
-            #_(println "PT within ARC")
-            #_(println (format "PT within ARC: CT=%s, HAV=%s"
-              (* geo.const/km->nm (Math/abs ct-dist)) (* geo.const/km->nm (geo.util/haversine l2 pt :radius radius))))
-	    (Math/abs ct-dist)))))))
+          (geo.util/haversine l2 pt :radius radius)  ; Pt is beyond arc
+          ct-dist)))))                               ; Pt w/i arc, use crosstrack distance
 
 
 
