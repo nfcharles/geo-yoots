@@ -10,24 +10,25 @@
 ;; - Utils -
 ;; ---------
 
+(def distance-threshold 0.0809935) ; nautical miles (150 meters)
+
 (defn round-float
   [x scale]
   (.floatValue (.setScale (bigdec x) scale BigDecimal/ROUND_HALF_UP)))
 
 (defn compare-float
-  [expected actual & {:keys [scale]
-                      :or {scale 4}}]
-  (is (= (round-float expected scale)
-         (round-float actual scale))))
+  [expected actual & {:keys [threshold]
+                      :or {threshold distance-threshold}}]
+  (is (<= (Math/abs (- expected actual)) threshold)))
 
 (defn compare-distance
-  [expected actual & {:keys [scale]
-                      :or {scale 1}}]
+  [expected actual & {:keys [threshold]
+                      :or {threshold distance-threshold}}]
   (loop [xs (seq (map vector expected actual))]
     (if-let [x (first xs)]
       ;; Convert actual output to nautical miles
       (let [[exp act] x]
-        (compare-float exp (* act geo.const/km->nm) :scale scale)
+        (is (<= (Math/abs (- exp (* geo.const/km->nm act))) threshold))
         (recur (rest xs))))))
 
 (defn compare-boolean
@@ -223,11 +224,11 @@
       (Math/abs (* geo.const/km->nm
                   (geo.sphere/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
                                                                                  {:lat -1.0 :lon 0.0})))
-      49.52030311 :scale 1)
-    #_(compare-float
+      49.52030311)
+    (compare-float
       (Math/abs (geo.sphere/crosstrack-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
                                                                   {:lat 50.5 :lon 80.5}))
-      479.6 :scale 1)))
+      479.6 :threshold 0.1)))
 
 (deftest crossarc-distance-test
   (testing "GC 1"
@@ -235,11 +236,11 @@
       (Math/abs (* geo.const/km->nm
                   (geo.sphere/crossarc-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
                                                                                {:lat -1.0 :lon 0.0})))
-      49.52030311 :scale 1)
-    #_(compare-float
+      49.52030311 :threadshold 0.1)
+    (compare-float
       (Math/abs (geo.sphere/crossarc-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
                                                                 {:lat 50.5 :lon 80.5}))
-      479.6 :scale 1)))
+      479.6 :threadhold 0.1)))
 
 
 ;; ---
@@ -257,7 +258,7 @@
 (deftest point-to-line-distance-test
   (testing "Polyline 1"
     (let [actual (geo.sphere/min-distance-to-polyline pl-test-points-1 polyline-1)]
-      (compare-distance pl-expected-1 actual :scale 2))))
+      (compare-distance pl-expected-1 actual))))
 
 
 (deftest point-within-line-distance-test
@@ -279,7 +280,7 @@
 (deftest point-to-circle-distance-test
   (testing "Circle 1"
     (let [actual (geo.sphere/distance-to-circle c-test-points-1 (:center circle-1) (:radius circle-1))]
-      (compare-distance c-expected-1 actual :scale 2)))
+      (compare-distance c-expected-1 actual)))
 
   (testing "Within Circle 1"
     (let [limit 1 ; kilometers
@@ -309,7 +310,7 @@
 
   (testing "Prime Meridian Simple Polygon 2 - 1"
     (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-2-1 polygon-2)]
-      (compare-distance pl-expected-2-1 actual :scale 2)))
+      (compare-distance pl-expected-2-1 actual)))
 
   (testing "Complex Polygon 1"
     (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-3 polygon-3)]
@@ -324,8 +325,3 @@
     (let [limit 500 ; kilometers
           actual (geo.sphere/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
       (compare-boolean [true false true true true] actual))))
-
-
-
-
-
