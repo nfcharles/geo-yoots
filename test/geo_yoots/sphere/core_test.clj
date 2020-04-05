@@ -103,13 +103,13 @@
 ;; ---
 
 ;; ---
-;; Case 1
+;; Case 1: Prime Meridian
 ;; ---
 
 (def polygon
   (list
-    [ 1.0   0.0]
-    [ 0.0   1.0]
+    [ 1.0  0.0]
+    [ 0.0  1.0]
     [-1.0  0.0]
     [ 0.0 -1.0]))
 
@@ -133,16 +133,16 @@
 
 
 ;; ---
-;; Case 2
+;; Case 2: Prime Meridian
 ;; ---
 
 (def polygon-2
   (list
-    [ 1.0  0.0]
-    [ 0.0  1.0]
-    [-1.0  0.0]
-    [ 0.0 -1.0]
-    [0.410995 0.326637]))
+    [ 1.000000  0.0]
+    [ 0.000000  1.0]
+    [-1.000000  0.0]
+    [ 0.000000 -1.0]
+    [ 0.410995  0.326637]))
 
 (def pl-test-points-2
   (list
@@ -166,7 +166,7 @@
 
 
 ;; ---
-;; - Case 3
+;; - Case 3: Random Polygon
 ;; ---
 
 (def polygon-3
@@ -196,6 +196,58 @@
     89.6123676
     135.43121731
     239.34137904))
+
+
+;; ---
+;; - Case 4: Dateline
+;; ---
+
+(def polygon-4
+  (list
+    [ 0.000000 -179.0]
+    [-1.000000  180.0]
+    [ 0.000000  179.0]
+    [ 0.549159 -179.796081]
+    [ 1.000000  180.0]))
+
+(def pl-test-points-4
+  (list
+    [-1.045232 -178.612838]
+    [ 1.055650 -178.501717]
+    [ 0.857212  179.596280]
+    [ 0.775169  179.974959]
+    [-2.217478  177.334105]))
+
+(def pl-expected-4
+  (list
+    60.80810884
+    65.96818653
+    25.70796515
+    6.9327234
+    164.84375525))
+
+
+;; ---
+;; - Case 5: North Pole
+;; ---
+
+(def polygon-5
+  (list
+    [89.0    0.0]
+    [89.0   90.0]
+    [89.0 -180.0]
+    [89.0  -90.0]))
+
+(def pl-test-points-5
+  (list
+    [88.978568 -151.508393]
+    [89.164211   47.284886]))
+
+(def pl-expected-5
+  (list
+    16.34236583
+    7.68410199))
+
 
 ;; =========
 ;; - Tests -
@@ -324,4 +376,13 @@
   (testing "Within Complex Polygon 1 - 2"
     (let [limit 500 ; kilometers
           actual (geo.sphere/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
-      (compare-boolean [true false true true true] actual))))
+      (compare-boolean [true false true true true] actual)))
+
+  (testing "Dateline Simple Polygon 1"
+    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-4 polygon-4)]
+        (compare-distance pl-expected-4 actual)))
+
+  (testing "North Pole Simple Polygon 1"
+    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-5 polygon-5)]
+        (compare-distance pl-expected-5 actual))))
+
