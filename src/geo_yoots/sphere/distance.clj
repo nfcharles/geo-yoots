@@ -1,4 +1,4 @@
-(ns geo-yoots.sphere.core
+(ns geo-yoots.sphere.distance
   (:require [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]))
 
@@ -20,6 +20,7 @@
 ;;; ---
 
 (defn vertices-vec->map
+  "Create {:lat y :lon x} map from pair"
   [vertices]
   (loop [xs vertices
          acc []]
@@ -29,6 +30,7 @@
       acc)))
 
 (defn prepare-polyline
+  "Create polyline edges from vertices"
   [vertices]
   (let [start (first vertices)]
     (loop [xs (rest vertices)
@@ -39,6 +41,7 @@
         acc))))
 
 (defn prepare-polygon
+  "Creates polygon edges from vertices"
   [vertices]
   (let [start (first vertices)]
     (loop [xs (rest vertices)
@@ -269,7 +272,7 @@
 ;;; - Distance from point to line
 ;;; ---
 
-(defn -min-distance-to-polyline
+(defn -to-polyline
   [pt vertices]
   (loop [xs vertices
          acc Integer/MAX_VALUE]
@@ -279,13 +282,13 @@
         (recur (rest xs) (if (< dist acc) dist acc)))
       acc)))
 
-(defn min-distance-to-polyline
+(defn to-polyline
   [pts vertices]
   (let [vts (prepare-polyline (vertices-vec->map vertices))]
     (loop [xs (vertices-vec->map pts)
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-min-distance-to-polyline pt vts)))
+        (recur (rest xs) (conj acc (-to-polyline pt vts)))
         acc))))
 
 (defn -within-distance-to-polyline?
@@ -313,18 +316,18 @@
 ;;; - Distance from point to circle
 ;;; ---
 
-(defn -distance-to-circle
+(defn -to-circle
   [pt center radius]
   (let [pt-to-center (geo.util/haversine pt center)]
     (- (geo.util/haversine pt center) radius)))
 
-(defn distance-to-circle
+(defn to-circle
   [pts center radius]
   (let [c {:lat (nth center 0) :lon (nth center 1)}]
     (loop [xs (vertices-vec->map pts)
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-distance-to-circle pt c radius)))
+        (recur (rest xs) (conj acc (-to-circle pt c radius)))
         acc))))
 
 (defn within-distance-to-circle?
@@ -333,7 +336,7 @@
     (loop [xs (vertices-vec->map pts)
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (<= (-distance-to-circle pt c radius) limit)))
+        (recur (rest xs) (conj acc (<= (-to-circle pt c radius) limit)))
         acc))))
 
 
@@ -341,7 +344,7 @@
 ;;; - Distance from point to polygon
 ;;; ---
 
-(defn -min-distance-to-polygon
+(defn -to-polygon
   [pt vertices]
   (loop [xs vertices
          acc Integer/MAX_VALUE]
@@ -351,13 +354,13 @@
         (recur (rest xs) (if (< dist acc) dist acc)))
       acc)))
 
-(defn min-distance-to-polygon
+(defn to-polygon
   [pts vertices]
   (let [vts (prepare-polygon (vertices-vec->map vertices))]
     (loop [xs (vertices-vec->map pts)
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-min-distance-to-polygon pt vts)))
+        (recur (rest xs) (conj acc (-to-polygon pt vts)))
         acc))))
 
 (defn -within-distance-to-polygon?

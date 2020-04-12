@@ -1,8 +1,8 @@
-(ns geo-yoots.sphere.core-test
+(ns geo-yoots.sphere.distance-test
   (:require [clojure.test :refer :all]
             [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]
-            [geo-yoots.sphere.core :as geo.sphere]))
+            [geo-yoots.sphere.distance :as geo.sphere.dist]))
 
 
 
@@ -261,37 +261,40 @@
 (deftest bearing-test
   )
 
+
 (deftest alongtrack-distance-test
   (testing "GC 1"
-    (let [ct-dist (geo.sphere/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                                 {:lat -1.0 :lon 0.0})
+    (let [ct-dist (geo.sphere.dist/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                                      {:lat -1.0 :lon 0.0})
           d13     (geo.util/haversine {:lat 0.0 :lon 1.0} {:lat -1.089144 :lon 1.077389})]
       (compare-float
-        (* geo.const/km->nm (geo.sphere/alongtrack-distance2 d13 ct-dist))
+        (* geo.const/km->nm (geo.sphere.dist/alongtrack-distance2 d13 ct-dist))
         43.14639))))
+
 
 (deftest crosstrack-distance-test
   (testing "GC 1"
     (compare-float
       (Math/abs (* geo.const/km->nm
-                  (geo.sphere/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                                 {:lat -1.0 :lon 0.0})))
+                  (geo.sphere.dist/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                                      {:lat -1.0 :lon 0.0})))
       49.52030311)
     (compare-float
-      (Math/abs (geo.sphere/crosstrack-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
-                                                                  {:lat 50.5 :lon 80.5}))
+      (Math/abs (geo.sphere.dist/crosstrack-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
+                                                                       {:lat 50.5 :lon 80.5}))
       479.6 :threshold 0.1)))
+
 
 (deftest crossarc-distance-test
   (testing "GC 1"
     (compare-float
       (Math/abs (* geo.const/km->nm
-                  (geo.sphere/crossarc-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                               {:lat -1.0 :lon 0.0})))
+                  (geo.sphere.dist/crossarc-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
+                                                                                    {:lat -1.0 :lon 0.0})))
       49.52030311 :threadshold 0.1)
     (compare-float
-      (Math/abs (geo.sphere/crossarc-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
-                                                                {:lat 50.5 :lon 80.5}))
+      (Math/abs (geo.sphere.dist/crossarc-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
+                                                                     {:lat 50.5 :lon 80.5}))
       479.6 :threadhold 0.1)))
 
 
@@ -309,19 +312,19 @@
 
 (deftest point-to-line-distance-test
   (testing "Polyline 1"
-    (let [actual (geo.sphere/min-distance-to-polyline pl-test-points-1 polyline-1)]
+    (let [actual (geo.sphere.dist/to-polyline pl-test-points-1 polyline-1)]
       (compare-distance pl-expected-1 actual))))
 
 
-(deftest point-within-line-distance-test
+(deftest point-within-distince-to-line-test
   (testing "Within Polyline 1"
     (let [limit 3 ; kilometers
-          actual (geo.sphere/within-distance-to-polyline? limit pl-test-points-1 polyline-1)]
+          actual (geo.sphere.dist/within-distance-to-polyline? limit pl-test-points-1 polyline-1)]
       (compare-boolean [false true false false] actual)))
 
   (testing "Within Polyline 1 - 2"
     (let [limit 5 ; kilometers
-          actual (geo.sphere/within-distance-to-polyline? limit pl-test-points-1 polyline-1)]
+          actual (geo.sphere.dist/within-distance-to-polyline? limit pl-test-points-1 polyline-1)]
       (compare-boolean [true true true false] actual))))
 
 
@@ -331,19 +334,20 @@
 
 (deftest point-to-circle-distance-test
   (testing "Circle 1"
-    (let [actual (geo.sphere/distance-to-circle c-test-points-1 (:center circle-1) (:radius circle-1))]
-      (compare-distance c-expected-1 actual)))
+    (let [actual (geo.sphere.dist/to-circle c-test-points-1 (:center circle-1) (:radius circle-1))]
+      (compare-distance c-expected-1 actual))))
 
+
+(deftest point-within-distince-to-circle-test
   (testing "Within Circle 1"
     (let [limit 1 ; kilometers
-          actual (geo.sphere/within-distance-to-circle? limit c-test-points-1 (:center circle-1) (:radius circle-1))]
+          actual (geo.sphere.dist/within-distance-to-circle? limit c-test-points-1 (:center circle-1) (:radius circle-1))]
       (compare-boolean [false false true] actual)))
 
   (testing "Within Circle 1 - 2"
     (let [limit 1.5 ; kilometers
-          actual (geo.sphere/within-distance-to-circle? limit c-test-points-1 (:center circle-1) (:radius circle-1))]
+          actual (geo.sphere.dist/within-distance-to-circle? limit c-test-points-1 (:center circle-1) (:radius circle-1))]
       (compare-boolean [true false true] actual))))
-
 
 
 
@@ -353,36 +357,37 @@
 
 (deftest point-to-polygon-distance-test
   (testing "Prime Meridian Simple Polygon 1"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points polygon)]
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points polygon)]
       (compare-distance pl-expected actual)))
 
   (testing "Prime Meridian Simple Polygon 2"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-2 polygon-2)]
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points-2 polygon-2)]
       (compare-distance pl-expected-2 actual)))
 
   (testing "Prime Meridian Simple Polygon 2 - 1"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-2-1 polygon-2)]
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points-2-1 polygon-2)]
       (compare-distance pl-expected-2-1 actual)))
 
   (testing "Complex Polygon 1"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-3 polygon-3)]
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points-3 polygon-3)]
       (compare-distance pl-expected-3 actual)))
 
+  (testing "Dateline Simple Polygon 1"
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points-4 polygon-4)]
+        (compare-distance pl-expected-4 actual)))
+
+  (testing "North Pole Simple Polygon 1"
+    (let [actual (geo.sphere.dist/to-polygon pl-test-points-5 polygon-5)]
+        (compare-distance pl-expected-5 actual))))
+
+
+(deftest point-within-distance-to-polygon-test
   (testing "Within Complex Polygon 1"
     (let [limit 200 ; kilometers
-          actual (geo.sphere/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
+          actual (geo.sphere.dist/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
       (compare-boolean [true false true false false] actual)))
 
   (testing "Within Complex Polygon 1 - 2"
     (let [limit 500 ; kilometers
-          actual (geo.sphere/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
-      (compare-boolean [true false true true true] actual)))
-
-  (testing "Dateline Simple Polygon 1"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-4 polygon-4)]
-        (compare-distance pl-expected-4 actual)))
-
-  (testing "North Pole Simple Polygon 1"
-    (let [actual (geo.sphere/min-distance-to-polygon pl-test-points-5 polygon-5)]
-        (compare-distance pl-expected-5 actual))))
-
+          actual (geo.sphere.dist/within-distance-to-polygon? limit pl-test-points-3 polygon-3)]
+      (compare-boolean [true false true true true] actual))))
