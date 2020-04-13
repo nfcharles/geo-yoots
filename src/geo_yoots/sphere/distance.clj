@@ -15,42 +15,32 @@
 
 
 
-;;; ---
-;;; - Util
-;;; ---
 
-(defn vertices-vec->map
-  "Create {:lat y :lon x} map from pair"
-  [vertices]
-  (loop [xs vertices
-         acc []]
-    (if-let [x (first xs)]
-      (let [[lat lon] x]
-        (recur (rest xs) (conj acc {:lat lat :lon lon})))
-      acc)))
 
-(defn prepare-polyline
-  "Create polyline edges from vertices"
-  [vertices]
-  (let [start (first vertices)]
-    (loop [xs (rest vertices)
-           a start
-           acc []]
-      (if-let [b (first xs)]
-        (recur (rest xs) b (conj acc [a b]))
-        acc))))
+(defn haversine
+  "Measures great cirlce distance of two points."
+  [[lat1 lon1] [lat2 lon2] & {:keys [radius]
+                              :or {radius geo.const/earth-radius}}]
+  (let [dlat  (Math/toRadians (- lat2 lat1))
+        dlon  (Math/toRadians (- lon2 lon1))
+        lat1r (Math/toRadians lat1)
+        lat2r (Math/toRadians lat2)
+        a (+ (* (Math/sin (/ dlat 2)) (Math/sin (/ dlat 2)))
+             (* (Math/sin (/ dlon 2)) (Math/sin (/ dlon 2)) (Math/cos lat1r) (Math/cos lat2r)))]
+    (->> (Math/sqrt a)
+         (Math/asin)
+         (* radius 2))))
 
-(defn prepare-polygon
-  "Creates polygon edges from vertices"
-  [vertices]
-  (let [start (first vertices)]
-    (loop [xs (rest vertices)
-           a start
-           acc []]
-      (if-let [b (first xs)]
-        (recur (rest xs) b (conj acc [a b]))
-        (conj acc [a start])))))
-
+(defn alt-distance
+  [[lat1 lon1] [lat2 lon2] & {:keys [radius]
+                              :or {radius geo.const/earth-radius}}]
+  (let [lat1r (Math/toRadians lat1)
+        lon1r (Math/toRadians lon1)
+        lat2r (Math/toRadians lat2)
+        lon2r (Math/toRadians lon2)]
+    (* (Math/acos (+ (* (Math/sin lat1r) (Math/sin lat2r))
+                     (* (Math/cos lat1r) (Math/cos lat2r) (Math/cos (- lon2r lon1r)))))
+       radius)))
 
 
 ;;; ===
@@ -63,7 +53,7 @@
 ;;; ---
 
 (defn bearing
-  [{lon1 :lon lat1 :lat} {lon2 :lon lat2 :lat}]
+  [[lat1 lon1] [lat2 lon2]]
   (let [dl    (Math/toRadians (- lon2 lon1))
         lat1r (Math/toRadians lat1)
         lat2r (Math/toRadians lat2)
@@ -101,7 +91,7 @@
 (defn crosstrack-distance
   [pt l1 l2 & {:keys [radius]
                :or {radius geo.const/earth-radius}}]
-  (let [dist (geo.util/haversine l1 pt :radius radius)
+  (let [dist (haversine l1 pt :radius radius)
         d13  (/ dist radius)]
     #_(println (format "D1->D3=%s" dist))
     (* (Math/asin (* (Math/sin d13)
@@ -235,17 +225,17 @@
                :or {radius geo.const/earth-radius}}]
   (let [b12    (bearing l1 l2)
         b13    (bearing l1 pt)
-        dist13 (geo.util/haversine l1 pt :radius radius)
+        dist13 (haversine l1 pt :radius radius)
         diff   (bearing-diff b12 b13)]
     (if (> diff (/ Math/PI 2))
       ;; Relative bearing is obtuse
       dist13
       (let [ct-dist (Math/abs (crosstrack-distance2 dist13 b13 b12 :radius radius))
-            d12     (geo.util/haversine l1 l2 :radius radius)
+            d12     (haversine l1 l2 :radius radius)
             d14     (alongtrack-distance2 dist13 ct-dist :radius radius)]
 	(if (> d14 d12)
-          (geo.util/haversine l2 pt :radius radius)  ; Pt is beyond arc
-          ct-dist)))))                               ; Pt w/i arc, use crosstrack distance
+          (haversine l2 pt :radius radius)  ; Pt is beyond arc
+          ct-dist)))))                      ; Pt w/i arc, use crosstrack distance
 
 
 
@@ -265,7 +255,7 @@
 
 (defn distance-to-point
   [p1 p2]
-  (geo.util/haversine p1 p2))
+  (haversine p1 p2))
 
 
 ;;; ===
@@ -284,11 +274,11 @@
 
 (defn to-polyline
   [pts vertices]
-  (let [vts (prepare-polyline (vertices-vec->map vertices))]
-    (loop [xs (vertices-vec->map pts)
+  (let [edges (geo.util/gen-polyline-edges vertices)]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-to-polyline pt vts)))
+        (recur (rest xs) (conj acc (-to-polyline pt edges)))
         acc))))
 
 (defn -within-distance-to-polyline?
@@ -303,11 +293,11 @@
 
 (defn within-distance-to-polyline?
   [limit pts vertices]
-  (let [vts (prepare-polyline (vertices-vec->map vertices))]
-    (loop [xs (vertices-vec->map pts)
+  (let [edges (geo.util/gen-polyline-edges vertices)]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-within-distance-to-polyline? limit pt vts)))
+        (recur (rest xs) (conj acc (-within-distance-to-polyline? limit pt edges)))
         acc))))
 
 
@@ -318,13 +308,13 @@
 
 (defn -to-circle
   [pt center radius]
-  (let [pt-to-center (geo.util/haversine pt center)]
-    (- (geo.util/haversine pt center) radius)))
+  (let [pt-to-center (haversine pt center)]
+    (- (haversine pt center) radius)))
 
 (defn to-circle
   [pts center radius]
-  (let [c {:lat (nth center 0) :lon (nth center 1)}]
-    (loop [xs (vertices-vec->map pts)
+  (let [c [(nth center 0) (nth center 1)]]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
         (recur (rest xs) (conj acc (-to-circle pt c radius)))
@@ -332,8 +322,8 @@
 
 (defn within-distance-to-circle?
   [limit pts center radius]
-  (let [c {:lat (nth center 0) :lon (nth center 1)}]
-    (loop [xs (vertices-vec->map pts)
+  (let [c [(nth center 0) (nth center 1)]]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
         (recur (rest xs) (conj acc (<= (-to-circle pt c radius) limit)))
@@ -356,11 +346,11 @@
 
 (defn to-polygon
   [pts vertices]
-  (let [vts (prepare-polygon (vertices-vec->map vertices))]
-    (loop [xs (vertices-vec->map pts)
+  (let [edges (geo.util/gen-polygon-edges vertices)]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-to-polygon pt vts)))
+        (recur (rest xs) (conj acc (-to-polygon pt edges)))
         acc))))
 
 (defn -within-distance-to-polygon?
@@ -375,9 +365,9 @@
 
 (defn within-distance-to-polygon?
   [limit pts vertices]
-  (let [vts (prepare-polygon (vertices-vec->map vertices))]
-    (loop [xs (vertices-vec->map pts)
+  (let [edges (geo.util/gen-polygon-edges vertices)]
+    (loop [xs pts
            acc []]
       (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-within-distance-to-polygon? limit pt vts)))
+        (recur (rest xs) (conj acc (-within-distance-to-polygon? limit pt edges)))
         acc))))

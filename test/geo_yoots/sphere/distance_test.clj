@@ -264,9 +264,8 @@
 
 (deftest alongtrack-distance-test
   (testing "GC 1"
-    (let [ct-dist (geo.sphere.dist/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                                      {:lat -1.0 :lon 0.0})
-          d13     (geo.util/haversine {:lat 0.0 :lon 1.0} {:lat -1.089144 :lon 1.077389})]
+    (let [ct-dist (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])
+          d13     (geo.sphere.dist/haversine [0.0 1.0] [-1.089144 1.077389])]
       (compare-float
         (* geo.const/km->nm (geo.sphere.dist/alongtrack-distance2 d13 ct-dist))
         43.14639))))
@@ -276,12 +275,10 @@
   (testing "GC 1"
     (compare-float
       (Math/abs (* geo.const/km->nm
-                  (geo.sphere.dist/crosstrack-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                                      {:lat -1.0 :lon 0.0})))
+                  (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
       49.52030311)
     (compare-float
-      (Math/abs (geo.sphere.dist/crosstrack-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
-                                                                       {:lat 50.5 :lon 80.5}))
+      (Math/abs (geo.sphere.dist/crosstrack-distance [51 69] [40.5 60.5] [50.5 80.5]))
       479.6 :threshold 0.1)))
 
 
@@ -289,12 +286,10 @@
   (testing "GC 1"
     (compare-float
       (Math/abs (* geo.const/km->nm
-                  (geo.sphere.dist/crossarc-distance {:lat -1.089144 :lon 1.077389} {:lat 0.0 :lon 1.0}
-                                                                                    {:lat -1.0 :lon 0.0})))
+                  (geo.sphere.dist/crossarc-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
       49.52030311 :threadshold 0.1)
     (compare-float
-      (Math/abs (geo.sphere.dist/crossarc-distance {:lat 51 :lon 69} {:lat 40.5 :lon 60.5}
-                                                                     {:lat 50.5 :lon 80.5}))
+      (Math/abs (geo.sphere.dist/crossarc-distance [51 69] [40.5 60.5] [50.5 80.5]))
       479.6 :threadhold 0.1)))
 
 
