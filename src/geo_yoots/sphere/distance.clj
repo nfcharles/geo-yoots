@@ -253,7 +253,7 @@
 ;;
 ;; Uses Haversine distance function
 
-(defn distance-to-point
+(defn to-point
   [p1 p2]
   (haversine p1 p2))
 

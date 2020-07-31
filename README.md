@@ -2,6 +2,8 @@
 
 Tools for working with geometry things
 
+Functions are implemented using spherical trigonometry: https://en.wikipedia.org/wiki/Spherical_trigonometry
+
 ## Structures
 
 ### Sphere
@@ -20,7 +22,7 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 ;; p1     -> [12.12345 53.54321] => [lat lon]
 ;; return -> [distance ...]
 
-(geo.sphere.distance/haversine p1 p2)
+(geo.sphere.distance/to-point p1 p2)
 ```
 
 #### Point to polyline
@@ -56,7 +58,8 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 
 #### Distance Boolean Functions
 
-Polyline, circle and polygon structures support the notion of being near points. E.g
+Polyline, circle and polygon structures support distance predicates - i.e.
+Are input points within `distance` to geometry.
 
 ```clojure
 (def limit 1.75) ;; kilometers
