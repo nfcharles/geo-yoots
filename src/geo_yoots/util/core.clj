@@ -42,4 +42,3 @@
       (if-let [b (first xs)]
         (recur (rest xs) b (conj acc [a b]))
         (conj acc [a start])))))
-
