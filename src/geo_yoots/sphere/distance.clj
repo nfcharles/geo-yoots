@@ -4,6 +4,7 @@
 
 
 
+
 ;;;; ====
 ;;;; ** Spherical geometry implementations
 ;;;; ----
@@ -12,8 +13,6 @@
 ;;;;  ii. https://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
 ;;;;
 ;;;; ====
-
-
 
 
 
@@ -43,36 +42,6 @@
        radius)))
 
 
-;;; ===
-;;; - Bearing
-;;; ---
-;;;
-;;; Formula:	θ = atan2( sin Δλ ⋅ cos φ2 , cos φ1 ⋅ sin φ2 − sin φ1 ⋅ cos φ2 ⋅ cos Δλ )
-;;;   where:
-;;;     φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
-;;; ---
-
-(defn bearing
-  [[lat1 lon1] [lat2 lon2]]
-  (let [dl    (Math/toRadians (- lon2 lon1))
-        lat1r (Math/toRadians lat1)
-        lat2r (Math/toRadians lat2)
-        y     (* (Math/sin dl) (Math/cos lat2r))
-        x     (- (* (Math/cos lat1r) (Math/sin lat2r))
-                 (* (Math/sin lat1r) (Math/cos lat2r) (Math/cos dl)))]
-    #_(println (format "y=%s, x=%s, dl=%s" y x dl))
-    (Math/atan2 y x)))
-
-(defn normalized-bearing
-  "Normalize to compass bearing (0 - 360)"
-  [p1 p2]
-  (let [br (bearing p1 p2)]
-    #_(println (format "BEARING=%s" br))
-    (-> (Math/toDegrees br)
-        (+ 360)
-        (mod 360))))
-
-
 
 ;;; ===
 ;;; - Cross Track Distance
@@ -95,8 +64,8 @@
         d13  (/ dist radius)]
     #_(println (format "D1->D3=%s" dist))
     (* (Math/asin (* (Math/sin d13)
-                     (Math/sin (- (bearing l1 pt)
-                                  (bearing l1 l2)))))
+                     (Math/sin (- (geo.util/bearing l1 pt)
+                                  (geo.util/bearing l1 l2)))))
        radius)))
 
 
@@ -119,6 +88,7 @@
               :or {radius geo.const/earth-radius}}]
   (let [d13 (/ dist13 radius)]
     (* (Math/acos (/ (Math/cos d13) (Math/cos (/ ct-dist radius)))) radius)))
+
 
 ;;; ===
 ;;; - Cross Arc Distance
@@ -199,8 +169,6 @@
 ;;;
 ;;; ---
 
-
-
 (defn crosstrack-distance2
   "Calculate crosstrack distance.
   Uses precomputed bearing and distance values"
@@ -212,21 +180,14 @@
                      (Math/sin (- b13 b12))))
        radius)))
 
-
-(defn bearing-diff
-  [b13 b12]
-  (let [diff (Math/abs (- b13 b12))]
-    (if (> diff Math/PI)
-      (- (* 2 Math/PI) diff) diff)))
-
 (defn crossarc-distance
   "Calculates crosstrack distance"
   [pt l1 l2 & {:keys [radius]
                :or {radius geo.const/earth-radius}}]
-  (let [b12    (bearing l1 l2)
-        b13    (bearing l1 pt)
+  (let [b12    (geo.util/bearing l1 l2)
+        b13    (geo.util/bearing l1 pt)
         dist13 (haversine l1 pt :radius radius)
-        diff   (bearing-diff b12 b13)]
+        diff   (geo.util/relative-bearing b12 b13)]
     (if (> diff (/ Math/PI 2))
       ;; Relative bearing is obtuse
       dist13
@@ -236,7 +197,6 @@
 	(if (> d14 d12)
           (haversine l2 pt :radius radius)  ; Pt is beyond arc
           ct-dist)))))                      ; Pt w/i arc, use crosstrack distance
-
 
 
 
@@ -299,7 +259,6 @@
       (if-let [pt (first xs)]
         (recur (rest xs) (conj acc (-within-distance-to-polyline? limit pt edges)))
         acc))))
-
 
 
 ;;; ===
