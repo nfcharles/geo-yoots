@@ -50,9 +50,9 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 #### Point to polygon
 
 ```clojure
-;; pts               -> [lat lon]
-;; polygon-vertices ->  [[lat lon] [lat lon] ... ]
-;; return            -> distance
+;; pt               -> [lat lon]
+;; polygon-vertices -> [[lat lon] [lat lon] ... ]
+;; return           -> distance
 
 (geo.sphere.distance/to-polygon pt polygon-vertices)
 ```
@@ -74,7 +74,7 @@ Are input points within `distance` to geometry.
 *Convex and Non-Convex Simple Polygons*
 
 ```clojure
-(geo.sphere.impl.incl/point-in-polygon-ssa? pt plane vertices)
+(geo.sphere.impl.incl/point-in-polygon? pt plane vertices)
 ```
 
 ## License
