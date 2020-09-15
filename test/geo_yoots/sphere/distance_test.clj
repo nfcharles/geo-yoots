@@ -1,5 +1,6 @@
 (ns geo-yoots.sphere.distance-test
   (:require [clojure.test :refer :all]
+            [geo-yoots.test-util :as test.util]
             [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]
             [geo-yoots.sphere.distance :as geo.sphere.dist]))
@@ -11,15 +12,6 @@
 ;; ---------
 
 (def distance-threshold 0.0809935) ; nautical miles (150 meters)
-
-(defn round-float
-  [x scale]
-  (.floatValue (.setScale (bigdec x) scale BigDecimal/ROUND_HALF_UP)))
-
-(defn compare-float
-  [expected actual & {:keys [threshold]
-                      :or {threshold distance-threshold}}]
-  (is (<= (Math/abs (- expected actual)) threshold)))
 
 (defn compare-distance
   [expected actual & {:keys [threshold]
@@ -258,47 +250,46 @@
 ;; - UTILS
 ;; ---
 
-(deftest bearing-test
-  )
-
-
 (deftest alongtrack-distance-test
   (testing "GC 1"
     (let [ct-dist (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])
           d13     (geo.sphere.dist/haversine [0.0 1.0] [-1.089144 1.077389])]
-      (compare-float
+      (test.util/compare-float
         (* geo.const/km->nm (geo.sphere.dist/alongtrack-distance2 d13 ct-dist))
         43.14639))))
 
 
 (deftest crosstrack-distance-test
-  (testing "GC 1"
-    (compare-float
+  (testing "GC 2.1"
+    (test.util/compare-float
       (Math/abs (* geo.const/km->nm
                   (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
-      49.52030311)
-    (compare-float
-      (Math/abs (geo.sphere.dist/crosstrack-distance [51 69] [40.5 60.5] [50.5 80.5]))
-      479.6 :threshold 0.1)))
+      49.52030311))
+
+  (testing "GC 2.2"
+    (test.util/compare-float
+      (test.util/round-float
+        (Math/abs (geo.sphere.dist/crosstrack-distance [51 69] [40.5 60.5] [50.5 80.5])) 1)
+      479.6 :threshold 0.1001)))
 
 
 (deftest crossarc-distance-test
-  (testing "GC 1"
-    (compare-float
+  (testing "GC 3.1"
+    (test.util/compare-float
       (Math/abs (* geo.const/km->nm
                   (geo.sphere.dist/crossarc-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
-      49.52030311 :threadshold 0.1)
-    (compare-float
-      (Math/abs (geo.sphere.dist/crossarc-distance [51 69] [40.5 60.5] [50.5 80.5]))
-      479.6 :threadhold 0.1)))
+      49.52030311 :threadshold 0.1))
+
+  (testing "GC 3.2"
+    (test.util/compare-float
+      (test.util/round-float
+        (Math/abs (geo.sphere.dist/crossarc-distance [51 69] [40.5 60.5] [50.5 80.5])) 1)
+      479.6 :threshold 0.1001)))
 
 
 ;; ---
 ;; - POINTS
 ;; ---
-
-(deftest point-to-point-distance-test
-  )
 
 
 ;; ---

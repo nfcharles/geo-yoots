@@ -2,7 +2,7 @@
 
 Tools for working with geometry things
 
-Functions are implemented using spherical trigonometry (https://en.wikipedia.org/wiki/Spherical_trigonometry)
+Functions are implemented using spherical trigonometry (https://en.wikipedia.org/wiki/Spherical_trigonometry, https://mathworld.wolfram.com/SphericalCoordinates.html)
 and vector maths.
 
 ## Features
@@ -21,7 +21,7 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 
 ```clojure
 ;; p1     -> [12.12345 53.54321] => [lat lon]
-;; return -> [distance ...]
+;; return -> distance
 
 (geo.sphere.distance/to-point p1 p2)
 ```
@@ -74,7 +74,7 @@ Are input points within `distance` to geometry.
 *Convex and Non-Convex Simple Polygons*
 
 ```clojure
-(geo.sphere.impl.incl/point-in-polygon? pt plane vertices)
+(geo.sphere.impl.inclusion/point-in-polygon? pt plane vertices)
 ```
 
 ## License

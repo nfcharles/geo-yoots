@@ -62,7 +62,7 @@
 
 
 ;; ===
-;; - Spherical Coordinates
+;; - Cartesian coordinates to Spherical Coordinates
 ;; ---
 ;; Formulas
 ;;  ρ: distance from origin to point (R)
@@ -80,7 +80,32 @@
 
 (defn cartesian->phi
   [[x y z]]
-  (Math/acos (/ z (Math/sqrt (+ (* x x) (* y y) (* z z))))))
+  (Math/acos (/ z (cartesian->rho [x y z]))))
+
+(defn cartesian->spherical
+  [xyz]
+  [(cartesian->rho xyz) (cartesian->theta xyz) (cartesian->phi xyz)])
+
+
+;; ===
+;; - Spherical Coordinates to Cartesian coordinates
+;; ---
+
+(defn spherical->x
+  [[rho theta phi]]
+  (* rho (Math/sin phi) (Math/cos theta)))
+
+(defn spherical->y
+  [[rho theta phi]]
+  (* rho (Math/sin phi) (Math/sin theta)))
+
+(defn spherical->z
+  [[rho theta phi]]
+  (* rho (Math/cos phi)))
+
+(defn spherical->cartesian
+  [r-theta-phi]
+  [(spherical->x r-theta-phi) (spherical->y r-theta-phi) (spherical->z r-theta-phi)])
 
 
 ;; ===

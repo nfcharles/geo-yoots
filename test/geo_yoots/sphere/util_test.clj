@@ -1,9 +1,9 @@
 (ns geo-yoots.sphere.util-test
   (:require [clojure.test :refer :all]
             [clojure.core.matrix :as mtx]
+            [geo-yoots.test-util :as test.util]
             [geo-yoots.constants :as geo.const]
             [geo-yoots.sphere.util :refer :all])) ;;:as geo.sphere.util]))
-
 
 
 ;; --- Test Helpers
@@ -13,8 +13,8 @@
   (let [x (latlon->x [lat lon])
         y (latlon->y [lat lon])
         z (latlon->z [lat lon])]
-    (is (= lat (cartesian->lat [x y z])))
-    (is (= lon (cartesian->lon [x y z])))))
+    (is (= (test.util/round-float lat 5) (test.util/round-float (cartesian->lat [x y z]) 5)))
+    (is (= (test.util/round-float lon 5) (test.util/round-float (cartesian->lon [x y z]) 5)))))
 
 (defn -test-centroid
   [pts expected]
@@ -24,16 +24,16 @@
   [latlon rho theta phi]
   (let [cart (latlon->cartesian latlon)]
     (is (= rho   (cartesian->rho cart)))
-    (is (= theta (cartesian->theta cart)))
-    (is (= phi   (cartesian->phi cart)))))
+    (is (= theta (test.util/round-float (Math/toDegrees (cartesian->theta cart)) 1)))
+    (is (= phi   (test.util/round-float (Math/toDegrees (cartesian->phi cart)) 1)))))
 
 (defn -test-unit-vector
   [latlon]
-  (is (= (mtx/magnitude (unit-normal-vector latlon)) 1.0)))
+  (is (= (test.util/round-float (mtx/magnitude (unit-normal-vector latlon)) 1) 1.0)))
 
 (defn -test-normal-vector
   [latlon]
-  (is (= (normal-vector latlon) geo.const/earth-radius)))
+  (is (= (test.util/round-float (mtx/magnitude (normal-vector latlon)) 1) (test.util/round-float geo.const/earth-radius 1))))
 
 (defn -test-vector
   [a b expected]
@@ -72,11 +72,16 @@
                     [-14.850146658102771 -178.07333636886855])))
 
 (deftest spherical-test
-  (testing "Coordinates"
-    (-test-spherical [45 0]     0.0 0.0 0.0)
-    (-test-spherical [45 -90]   0.0 0.0 0.0)
-    (-test-spherical [45 -180]  0.0 0.0 0.0)
-    (-test-spherical [-90 -180] 0.0 0.0 0.0)))
+  (testing "Coordinates (45,0)"
+    (-test-spherical [45     0] 1.0     0.0   45.0))
+  (testing "Coordinates (45, -90)"
+    (-test-spherical [45   -90] 1.0    -90.0  45.0))
+  (testing "Coordinates (45, -180)"
+    (-test-spherical [45  -180] 1.0   -180.0  45.0))
+  (testing "Coordinates (17.5, -135)"
+    (-test-spherical [17.5  -135] 1.0 -135.0  72.5))
+  (testing "Coordinates (-90, -180)"
+    (-test-spherical [-90 -180] 1.0   -180.0 180.0)))
 
 (deftest vector-test
   (testing "Unit vector"

@@ -5,7 +5,6 @@
 
 ;; ---- Inclusion Fixtures
 
-;; kiel
 (def polygon-1-testcase
   (hash-map
     :plane   [54.355198 10.164557]
@@ -44,7 +43,6 @@
 
 ;; ----
 
-;; norco
 (def polygon-2-testcase
   (hash-map
     :plane   [29.992134 -90.450516]
@@ -71,7 +69,6 @@
 
 ;; ---
 
-;; arteco
 (def polygon-3-testcase
   (hash-map
     :plane   [29.980272 -93.880814]
@@ -86,9 +83,8 @@
               [29.983196 -93.880776]
               [29.978697 -93.872460]]))
 
-;; ---
 
-;; den
+;; ---
 
 (def polygon-4-testcase
   (hash-map
@@ -114,6 +110,7 @@
     :out     [[52.952342 4.790257]
               [52.955226 4.768825]
               [52.957576 4.803784]]))
+
 
 ;; ---
 
@@ -165,6 +162,30 @@
     :out     [[53.474778 8.491399]]))
 
 
+;; ---
+
+(def polygon-7-testcase
+  (hash-map
+    :plane   [19.68 -92.087997]
+    :polygon [[19.984985, -91.791344]
+              [19.974062, -92.040572]
+              [20.035413, -92.146439]
+              [19.954651, -92.65622]
+              [19.450817, -92.515889]
+              [19.660322, -91.769042]
+              [19.984985, -91.791344]]
+    :in      [[19.945228 -91.840841]
+              [19.637810 -92.193672]
+              [19.942504 -92.643283]
+              [19.952741 -92.653931]
+              [19.954061 -92.655662]]
+    :out     [[19.976894 -92.039441]
+              [19.428962 -92.527213]
+              [19.808805 -93.276270]
+              [19.282991 -91.691915]
+              [19.955085 -92.656947]]))
+
+
 ;; --- Function Helpers
 
 (defn -test-point-inclusion
@@ -195,7 +216,8 @@
     (test-point-in-polygon polygon-3-testcase)
     (test-point-in-polygon polygon-4-testcase)
     (test-point-in-polygon polygon-5-testcase)
-    (test-point-in-polygon polygon-6-testcase))
+    (test-point-in-polygon polygon-6-testcase)
+    (test-point-in-polygon polygon-7-testcase))
 
   (testing "Outside"
     (test-point-out-polygon polygon-1-testcase)
@@ -203,4 +225,5 @@
     (test-point-out-polygon polygon-3-testcase)
     (test-point-out-polygon polygon-4-testcase)
     (test-point-out-polygon polygon-5-testcase)
-    (test-point-out-polygon polygon-6-testcase)))
+    (test-point-out-polygon polygon-6-testcase)
+    (test-point-out-polygon polygon-7-testcase)))
