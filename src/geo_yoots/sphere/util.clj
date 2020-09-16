@@ -1,7 +1,6 @@
 (ns geo-yoots.sphere.util
   (:require [clojure.pprint :as pp]
             [geo-yoots.constants :as geo.consts]
-            [clojure.math.combinatorics :as comb]
             [clojure.core.matrix :as mtx]
             [clojure.core.matrix.operators :as mtx.op]))
 
