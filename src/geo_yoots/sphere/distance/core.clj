@@ -1,4 +1,4 @@
-(ns geo-yoots.sphere.distance
+(ns geo-yoots.sphere.distance.core
   (:require [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]))
 
@@ -12,8 +12,6 @@
 ;;;;  ii. https://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
 ;;;;
 ;;;; ====
-
-
 
 
 
@@ -72,6 +70,11 @@
         (+ 360)
         (mod 360))))
 
+(defn relative-bearing
+  [b13 b12]
+  (let [diff (Math/abs (- b13 b12))]
+    (if (> diff Math/PI)
+      (- (* 2 Math/PI) diff) diff)))
 
 
 ;;; ===
@@ -119,6 +122,7 @@
               :or {radius geo.const/earth-radius}}]
   (let [d13 (/ dist13 radius)]
     (* (Math/acos (/ (Math/cos d13) (Math/cos (/ ct-dist radius)))) radius)))
+
 
 ;;; ===
 ;;; - Cross Arc Distance
@@ -199,8 +203,6 @@
 ;;;
 ;;; ---
 
-
-
 (defn crosstrack-distance2
   "Calculate crosstrack distance.
   Uses precomputed bearing and distance values"
@@ -212,13 +214,6 @@
                      (Math/sin (- b13 b12))))
        radius)))
 
-
-(defn bearing-diff
-  [b13 b12]
-  (let [diff (Math/abs (- b13 b12))]
-    (if (> diff Math/PI)
-      (- (* 2 Math/PI) diff) diff)))
-
 (defn crossarc-distance
   "Calculates crosstrack distance"
   [pt l1 l2 & {:keys [radius]
@@ -226,7 +221,7 @@
   (let [b12    (bearing l1 l2)
         b13    (bearing l1 pt)
         dist13 (haversine l1 pt :radius radius)
-        diff   (bearing-diff b12 b13)]
+        diff   (relative-bearing b12 b13)]
     (if (> diff (/ Math/PI 2))
       ;; Relative bearing is obtuse
       dist13
@@ -236,7 +231,6 @@
 	(if (> d14 d12)
           (haversine l2 pt :radius radius)  ; Pt is beyond arc
           ct-dist)))))                      ; Pt w/i arc, use crosstrack distance
-
 
 
 
@@ -273,13 +267,9 @@
       acc)))
 
 (defn to-polyline
-  [pts vertices]
+  [pt vertices]
   (let [edges (geo.util/gen-polyline-edges vertices)]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-to-polyline pt edges)))
-        acc))))
+    (-to-polyline pt edges)))
 
 (defn -within-distance-to-polyline?
   [limit pt vertices]
@@ -292,14 +282,9 @@
       false)))
 
 (defn within-distance-to-polyline?
-  [limit pts vertices]
+  [limit pt vertices]
   (let [edges (geo.util/gen-polyline-edges vertices)]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-within-distance-to-polyline? limit pt edges)))
-        acc))))
-
+    (-within-distance-to-polyline? limit pt edges)))
 
 
 ;;; ===
@@ -312,22 +297,14 @@
     (- (haversine pt center) radius)))
 
 (defn to-circle
-  [pts center radius]
+  [pt center radius]
   (let [c [(nth center 0) (nth center 1)]]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-to-circle pt c radius)))
-        acc))))
+    (-to-circle pt c radius)))
 
 (defn within-distance-to-circle?
-  [limit pts center radius]
+  [limit pt center radius]
   (let [c [(nth center 0) (nth center 1)]]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (<= (-to-circle pt c radius) limit)))
-        acc))))
+    (<= (-to-circle pt c radius) limit)))
 
 
 ;;; ===
@@ -345,13 +322,9 @@
       acc)))
 
 (defn to-polygon
-  [pts vertices]
+  [pt vertices]
   (let [edges (geo.util/gen-polygon-edges vertices)]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-to-polygon pt edges)))
-        acc))))
+    (-to-polygon pt edges)))
 
 (defn -within-distance-to-polygon?
   [limit pt vertices]
@@ -364,10 +337,6 @@
       false)))
 
 (defn within-distance-to-polygon?
-  [limit pts vertices]
+  [limit pt vertices]
   (let [edges (geo.util/gen-polygon-edges vertices)]
-    (loop [xs pts
-           acc []]
-      (if-let [pt (first xs)]
-        (recur (rest xs) (conj acc (-within-distance-to-polygon? limit pt edges)))
-        acc))))
+    (-within-distance-to-polygon? limit pt edges)))

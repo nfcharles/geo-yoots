@@ -2,25 +2,26 @@
 
 Tools for working with geometry things
 
-Functions are implemented using spherical trigonometry: https://en.wikipedia.org/wiki/Spherical_trigonometry
+Functions are implemented using spherical trigonometry (https://en.wikipedia.org/wiki/Spherical_trigonometry, https://mathworld.wolfram.com/SphericalCoordinates.html)
+and vector maths.
 
-## Structures
+## Features
 
-### Sphere
+### Distance Functions
 
-Supported features
-1. Point to point distance
-2. Point to polyline distance
-3. Point to circle distance
-4. Point to polygon distance
+Supported objects
+1. Point to *point* distance
+2. Point to *polyline* distance
+3. Point to *circle* distance
+4. Point to *polygon* distance
 
-Points are `latitude` and `longitude` pairs. Input/Output units are in kilometers.
+Points are `latitude` and `longitude` pairs. Units are in kilometers.
 
 #### Point to point
 
 ```clojure
 ;; p1     -> [12.12345 53.54321] => [lat lon]
-;; return -> [distance ...]
+;; return -> distance
 
 (geo.sphere.distance/to-point p1 p2)
 ```
@@ -28,20 +29,20 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 #### Point to polyline
 
 ```clojure
-;; pts               -> [[lat lon] ...]
+;; pt                -> [lat lon]
 ;; polyline-vertices -> [[lat lon] [lat lon] ... ]
-;; return            -> [distance ...]
+;; return            -> distance
 
-(geo.sphere.distance/to-polyline pts polyline-vertices)
+(geo.sphere.distance/to-polyline pt polyline-vertices)
 ```
 
 #### Point to cirlce
 
 ```clojure
-;; pts    -> [[lat lon] ...]
+;; pt     -> [lat lon]
 ;; center -> [lat lon]
-;; radius -> cirlce radius
-;; return -> [distance ...]
+;; radius -> radius
+;; return -> distance
 
 (geo.sphere.distance/to-circle pts center radius)
 ```
@@ -49,11 +50,14 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 #### Point to polygon
 
 ```clojure
-;; pts               -> [[lat lon] ...]
-;; polyline-vertices -> [[lat lon] [lat lon] ... ]
-;; return            -> [distance ...]
+;; pt               -> [lat lon]
+;; polygon-vertices -> [[lat lon] [lat lon] ... ]
+;; return           -> distance
 
-(geo.sphere.distance/to-polygon pts polygon-vertices)
+;; Unsigned impl
+(geo.sphere.distance/to-polygon pt polygon-vertices)
+
+(geo.sphere.distance.signed/to-polygon pt polygon-vertices)
 ```
 
 #### Distance Boolean Functions
@@ -66,6 +70,15 @@ Are input points within `distance` to geometry.
 (geo.sphere.distance/within-distance-to-polyline? limit pts polyline)
 ```
 
+### Inclusion Tests
+
+#### Point in polygon
+
+*Convex and Non-Convex Simple Polygons*
+
+```clojure
+(geo.sphere.impl.inclusion/point-in-polygon? pt vertices)
+```
 
 ## License
 

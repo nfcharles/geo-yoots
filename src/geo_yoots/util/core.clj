@@ -43,3 +43,9 @@
         (recur (rest xs) b (conj acc [a b]))
         (conj acc [a start])))))
 
+(defn ensure-unique-vertices
+  "Ensure vertices only appear once - head & tail are unique "
+  [vertices]
+  (if (= (first vertices) (last vertices))
+    (rest vertices)
+    vertices))

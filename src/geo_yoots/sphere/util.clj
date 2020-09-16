@@ -1,6 +1,11 @@
 (ns geo-yoots.sphere.util
-  )
+  (:require [clojure.pprint :as pp]
+            [geo-yoots.constants :as geo.consts]
+            [clojure.core.matrix :as mtx]
+            [clojure.core.matrix.operators :as mtx.op]))
 
+
+(mtx/set-current-implementation :vectorz)
 
 
 ;; ====
@@ -16,18 +21,21 @@
 ;;   λ: longitude
 ;; ----
 
-(defn to-x
-  [{lat :lat lon :lon }]
-  (* (Math/cos (Math/toRadians lon)) (Math/cos (Math/toRadians lat))))
+(defn latlon->x
+  [[lat lon]]
+  (* (Math/cos (Math/toRadians lat)) (Math/cos (Math/toRadians lon))))
 
-(defn to-y
-  [{lat :lat lon :lon }]
-  (* (Math/sin (Math/toRadians lon)) (Math/cos (Math/toRadians lat))))
+(defn latlon->y
+  [[lat lon]]
+  (* (Math/cos (Math/toRadians lat)) (Math/sin (Math/toRadians lon))))
 
-(defn to-z
-  [{lat :lat lon :lon }]
+(defn latlon->z
+  [[lat lon]]
   (Math/sin (Math/toRadians lat)))
 
+(defn latlon->cartesian
+  [coordinates]
+  [(latlon->x coordinates) (latlon->y coordinates) (latlon->z coordinates)])
 
 
 ;; ===
@@ -39,14 +47,64 @@
 ;;   φ: atan2(z, sqrt(x^2 + y^2)
 ;; ---
 
-(defn to-lat
-  [{x :x y :y z :z}]
+(defn cartesian->lat
+  [[x y z]]
   (Math/toDegrees (Math/atan2 z (Math/sqrt (+ (* x x) (* y y))))))
 
-(defn to-lon
-  [{x :x y :y z :z}]
+(defn cartesian->lon
+  [[x y z]]
   (Math/toDegrees (Math/atan2 y x)))
 
+(defn cartesian->latlon
+  [cart]
+  [(cartesian->lat cart) (cartesian->lon cart)])
+
+
+;; ===
+;; - Cartesian coordinates to Spherical Coordinates
+;; ---
+;; Formulas
+;;  ρ: distance from origin to point (R)
+;;  θ: angle between + x-axis and projection of ρ (r) onto xy plane
+;;  φ: angle between + z-axis and line from origin to point (ρ) - 0 <= φ <= pi
+
+
+(defn cartesian->rho
+  [[x y z]]
+  (Math/sqrt (+ (* x x) (* y y) (* z z))))
+
+(defn cartesian->theta
+  [[x y z]]
+  (Math/atan2 y x))
+
+(defn cartesian->phi
+  [[x y z]]
+  (Math/acos (/ z (cartesian->rho [x y z]))))
+
+(defn cartesian->spherical
+  [xyz]
+  [(cartesian->rho xyz) (cartesian->theta xyz) (cartesian->phi xyz)])
+
+
+;; ===
+;; - Spherical Coordinates to Cartesian coordinates
+;; ---
+
+(defn spherical->x
+  [[rho theta phi]]
+  (* rho (Math/sin phi) (Math/cos theta)))
+
+(defn spherical->y
+  [[rho theta phi]]
+  (* rho (Math/sin phi) (Math/sin theta)))
+
+(defn spherical->z
+  [[rho theta phi]]
+  (* rho (Math/cos phi)))
+
+(defn spherical->cartesian
+  [r-theta-phi]
+  [(spherical->x r-theta-phi) (spherical->y r-theta-phi) (spherical->z r-theta-phi)])
 
 
 ;; ===
@@ -57,54 +115,67 @@
 ;; ---
 
 (defn centroid
-  [points]
-  (let [len (count points)]
-    (loop [xs points
+  [pts]
+  (let [len (count pts)]
+    (loop [xs pts
            x 0
            y 0
            z 0]
       (if-let [pt (first xs)]
-        (recur (rest xs) (+ x (to-x pt)) (+ y (to-y pt)) (+ z (to-z pt)))
-        (let [x-avg (/ x len)
-              y-avg (/ y len)
-              z-avg (/ z len)]
-          (hash-map
-            :lat (to-lat {:x x-avg :y y-avg :z z-avg})
-            :lon (to-lon {:x x-avg :y y-avg :z z-avg})))))))
+        (recur (rest xs) (+ x (latlon->x pt)) (+ y (latlon->y pt)) (+ z (latlon->z pt)))
+        (cartesian->latlon [(/ x len) (/ y len) (/ z len)])))))
 
 
+;; ====
+;; - Vectors
+;; ====
 
-;; =====================
-;; -                   -
-;; -  Test Main Diver  -
-;; -                   -
-;; =====================
+(defn latlon->vector
+  [latlon]
+  (mtx/matrix (latlon->cartesian latlon)))
 
-(defn test-centriod
-  []
-  (let [pts-1 [{:lat  1.0  :lon  0.0}
-               {:lat  0.0  :lon  1.0}
-               {:lat -1.0  :lon  0.0}
-               {:lat  0.0  :lon -1.0}]
-        pts-2 [{:lat -21.1333 :lon -175.2}       ; Tonga
-               {:lat -8.53333 :lon  179.2167}]]  ; Tuvalu
-    (println (format "CENTRIOD[%s]=%s" pts-1 (centroid pts-1)))
-    (println (format "CENTRIOD[%s]=%s" pts-2 (centroid pts-2)))))
+(defn normalize
+  [a]
+  (let [av (mtx/matrix a)]
+    (mtx.op// av (mtx/magnitude av))))
 
-(defn test
-  [{lat :lat lon :lon}]
-  (let [x (to-x {:lat lat :lon lon})
-        y (to-y {:lat lat :lon lon})
-        z (to-z {:lat lat :lon lon})]
-    (println (format "LAT[%s = %s]" lat (to-lat {:x x :y y :z z})))
-    (println (format "LON[%s = %s]" lon (to-lon {:x x :y y :z z})))))
+(defn normal-vector
+  "Calculates normal-vector.  For unit vector, `radius` is 1"
+  [latlon & {:keys [radius]
+              :or {radius geo.consts/earth-radius}}]
+  ;; TODO: lat/lon directly to spherical???
+  (let [cart  (latlon->cartesian latlon)
+        theta (cartesian->theta cart)
+        phi   (cartesian->phi cart)]
+    (mtx/matrix [(* radius (Math/cos theta) (Math/sin phi))
+                 (* radius (Math/sin theta) (Math/sin phi))
+                 (* radius (Math/cos phi))])))
+
+(defn unit-normal-vector
+  [latlon]
+  (normal-vector latlon :radius 1))
+
+;; ---
+;; - Vectorized
+;; ---
+
+(defn a->b-vector
+  "Create vector from points A & B"
+  [av bv & {:keys [scale]
+          :or {scale 1}}]
+  (mtx.op/* scale (mtx.op/- bv av)))
+
+(defn ortho-plane-projection
+  [av pv unit-normal]
+  #_(println (format "ORTHO_PROJECTION: AV[%s], PV[%s], NORMAL[%s]" av pv unit-normal))
+  (mtx.op/- av (mtx.op/* (mtx/dot (mtx.op/- av pv) unit-normal) unit-normal)))
 
 
+;; ----
+;; - Distance
+;; ---
 
-
-(defn -main
-  [& args]
-  (let []
-    (test-centriod)
-    (test {:lat 0.0 :lon 0.0})
-    (test {:lat 17.688132 :lon 83.299026})))
+(defn distance-to-plane
+  "Distance of point to plane[n * (x - x0) = 0]"
+  [pt plane normal]
+  (/ (Math/abs (mtx/dot normal (a->b-vector plane pt))) (mtx/magnitude normal)))
