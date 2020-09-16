@@ -191,7 +191,7 @@
 (defn -test-point-inclusion
   [direction tc expected]
   (doseq [pt (direction tc)]
-    (is (= (point-in-polygon? pt (:plane tc) (:polygon tc)) expected))))
+    (is (= (point-in-polygon? pt (:polygon tc)) expected))))
 
 (defn test-point-in-polygon
   [tc]
@@ -206,7 +206,7 @@
 
 (deftest triangle-split-test
   (testing "Simple vertices"
-    (= (triangle-splits (range 5)) [[0 1 2] [0 2 3] [0 3 4]])))
+    (= (gen-triangle-partitions (range 5)) [[0 1 2] [0 2 3] [0 3 4]])))
 
 
 (deftest point-inclusion-test

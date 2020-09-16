@@ -308,7 +308,7 @@
           actual (map #(geo.sphere.dist/within-distance-to-polyline? limit % polyline-1) pl-test-points-1)]
       (compare-boolean [false true false false] actual)))
 
-  (testing "Within Polyline 1 - 2"
+  (testing "Within Polyline 1.2"
     (let [limit 5 ; kilometers
           actual (map #(geo.sphere.dist/within-distance-to-polyline? limit % polyline-1) pl-test-points-1)]
       (compare-boolean [true true true false] actual))))
@@ -330,7 +330,7 @@
           actual (map #(geo.sphere.dist/within-distance-to-circle? limit % (:center circle-1) (:radius circle-1)) c-test-points-1)]
       (compare-boolean [false false true] actual)))
 
-  (testing "Within Circle 1 - 2"
+  (testing "Within Circle 1.2"
     (let [limit 1.5 ; kilometers
           actual (map #(geo.sphere.dist/within-distance-to-circle? limit % (:center circle-1) (:radius circle-1)) c-test-points-1)]
       (compare-boolean [true false true] actual))))
@@ -350,7 +350,7 @@
     (let [actual (map #(geo.sphere.dist/to-polygon % polygon-2) pl-test-points-2)]
       (compare-distance pl-expected-2 actual)))
 
-  (testing "Prime Meridian Simple Polygon 2 - 1"
+  (testing "Prime Meridian Simple Polygon 2.1"
     (let [actual (map #(geo.sphere.dist/to-polygon % polygon-2) pl-test-points-2-1)]
       (compare-distance pl-expected-2-1 actual)))
 
@@ -373,7 +373,7 @@
           actual (map #(geo.sphere.dist/within-distance-to-polygon? limit % polygon-3) pl-test-points-3)]
       (compare-boolean [true false true false false] actual)))
 
-  (testing "Within Simple Polygon 1 - 2"
+  (testing "Within Simple Polygon 1.2"
     (let [limit 500 ; kilometers
           actual (map #(geo.sphere.dist/within-distance-to-polygon? limit % polygon-3) pl-test-points-3)]
       (compare-boolean [true false true true true] actual))))

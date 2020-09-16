@@ -1,5 +1,6 @@
 (ns geo-yoots.sphere.impl.inclusion
   (:require [clojure.pprint :as pp]
+            [geo-yoots.util.core :as geo.util]
             [geo-yoots.sphere.util :as geo.sphere.util]
             [clojure.core.matrix :as mtx]
             [clojure.core.matrix.operators :as mtx.op]))
@@ -43,42 +44,33 @@
         (recur (rest xs) (conj acc (geo.sphere.util/ortho-plane-projection av pv unit-nv))))
       acc)))
 
-(defn prepare-vertices
-  [vertices]
-  (if (= (first vertices) (last vertices))
-    (drop-last vertices)
-    vertices))
-
-(defn triangle-splits
+(defn gen-triangle-partitions
   "Generates triangular partitions for a polygon"
   [vertices]
   (let [anchor (first vertices)]
-    (loop [xs  (rest (prepare-vertices vertices))
+    (loop [xs  (rest vertices)
            tri [anchor]
            acc []]
       (if-let [x (first xs)]
         (if (= (count tri) 2)
-          (do
-            #_(println (format "TF: Remaing Vertices: %s" xs))
-            (recur xs [anchor] (conj acc (conj tri x))))
+          (recur xs [anchor] (conj acc (conj tri x)))
           (recur (rest xs) (conj tri x) acc))
         acc))))
 
 (defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
-  [pt plane vertices]
-  (let [unit-nv    (geo.sphere.util/unit-normal-vector plane) ;; Find unit normal vector
-        pv         (geo.sphere.util/latlon->vector plane)     ;; Plane
-        av         (geo.sphere.util/latlon->vector pt)        ;; Point
-        projected  (project-vertices pv unit-nv vertices)     ;; Transform vertices
-        triangles  (triangle-splits projected)]               ;; Get all sub triangles
-    #_(pp/pprint triangles)
+  [pt vertices]
+  (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
+        cent       (geo.sphere.util/centroid uniq-verts)        ;; Centroid for projection plane
+        unit-nv    (geo.sphere.util/unit-normal-vector cent)    ;; Unit normal vector
+        pv         (geo.sphere.util/latlon->vector cent)        ;; Projection Plane
+        av         (geo.sphere.util/latlon->vector pt)          ;; Test Point
+        projected  (project-vertices pv unit-nv uniq-verts)     ;; Projected Vertices to Plane
+        triangles  (gen-triangle-partitions projected)]         ;; Triangle Partitions
     (loop [xs triangles
            acc 0]
       (if-let [x (first xs)]
         (recur (rest xs) (+ acc (if (same-side-algo av x) 1 0)))
 
-        ;; Point is inside if hit-rate is odd, otherwise outside
-        (do
-          #_(println (format "TRIANGLE_HIT_RATE=%s" acc))
-          (odd? acc))))))
+        ;; If point intersects with odd number of triangles, inside otherwise outside.
+        (odd? acc)))))

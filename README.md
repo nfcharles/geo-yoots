@@ -77,7 +77,7 @@ Are input points within `distance` to geometry.
 *Convex and Non-Convex Simple Polygons*
 
 ```clojure
-(geo.sphere.impl.inclusion/point-in-polygon? pt plane vertices)
+(geo.sphere.impl.inclusion/point-in-polygon? pt vertices)
 ```
 
 ## License
