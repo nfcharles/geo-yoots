@@ -1,4 +1,4 @@
-(ns geo-yoots.sphere.distance
+(ns geo-yoots.sphere.distance.core
   (:require [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]))
 

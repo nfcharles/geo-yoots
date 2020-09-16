@@ -15,7 +15,7 @@ Supported objects
 3. Point to *circle* distance
 4. Point to *polygon* distance
 
-Points are `latitude` and `longitude` pairs. Input/Output units are in kilometers.
+Points are `latitude` and `longitude` pairs. Units are in kilometers.
 
 #### Point to point
 
@@ -54,7 +54,10 @@ Points are `latitude` and `longitude` pairs. Input/Output units are in kilometer
 ;; polygon-vertices -> [[lat lon] [lat lon] ... ]
 ;; return           -> distance
 
+;; Unsigned impl
 (geo.sphere.distance/to-polygon pt polygon-vertices)
+
+(geo.sphere.distance.signed/to-polygon pt polygon-vertices)
 ```
 
 #### Distance Boolean Functions
