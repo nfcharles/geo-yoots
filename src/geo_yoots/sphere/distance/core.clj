@@ -293,18 +293,15 @@
 
 (defn -to-circle
   [pt center radius]
-  (let [pt-to-center (haversine pt center)]
-    (- (haversine pt center) radius)))
+  (- (haversine pt center) radius))
 
 (defn to-circle
   [pt center radius]
-  (let [c [(nth center 0) (nth center 1)]]
-    (-to-circle pt c radius)))
+  (-to-circle pt center radius))
 
 (defn within-distance-to-circle?
   [limit pt center radius]
-  (let [c [(nth center 0) (nth center 1)]]
-    (<= (-to-circle pt c radius) limit)))
+  (<= (-to-circle pt center radius) limit))
 
 
 ;;; ===

@@ -7,6 +7,23 @@
 
 
 ;;; ===
+;;; - Signed distance from point to circle
+;;; ---
+
+(defn -to-circle
+  [pt center radius]
+  (- (geo.sphere.dist/haversine pt center) radius))
+
+(defn to-circle
+  [pt center radius]
+  (-to-circle pt center radius))
+
+(defn within-distance-to-circle?
+  [limit pt center radius]
+  (<= (-to-circle pt center radius) limit))
+
+
+;;; ===
 ;;; - Signed distance from point to polygon
 ;;; ---
 
