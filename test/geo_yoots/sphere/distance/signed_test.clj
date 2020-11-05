@@ -206,4 +206,6 @@
       (doseq [[latlon expected j] (map vector (:points test) (:dists test) (range 1 (inc (count (:points test)))))]
         (testing (format "Polygon Test Case %s.%s" i j)
           (let [poly (:polygon test)]
+            ;; Test both orientations of polygons
+            (compare-distance expected (geo.sphere.signed-dist/to-polygon latlon (reverse poly)))
             (compare-distance expected (geo.sphere.signed-dist/to-polygon latlon poly))))))))

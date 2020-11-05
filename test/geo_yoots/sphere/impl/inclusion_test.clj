@@ -7,7 +7,6 @@
 
 (def polygon-1-testcase
   (hash-map
-    :plane   [54.355198 10.164557]
     :polygon [[54.310769 10.129421]
               [54.309937 10.135439]
               [54.316093 10.143296]
@@ -45,7 +44,6 @@
 
 (def polygon-2-testcase
   (hash-map
-    :plane   [29.992134 -90.450516]
     :polygon [[29.993095 -90.460828]
               [29.992001 -90.454835]
               [29.990196 -90.446007]
@@ -71,7 +69,6 @@
 
 (def polygon-3-testcase
   (hash-map
-    :plane   [29.980272 -93.880814]
     :polygon [[29.977193 -93.873439]
               [29.981075 -93.871994]
               [29.984797 -93.891251]
@@ -88,7 +85,6 @@
 
 (def polygon-4-testcase
   (hash-map
-    :plane   [52.957531 4.787157]
     :polygon [[52.971092 4.765513]
               [52.95706 4.764809]
               [52.956077 4.769635]
@@ -116,7 +112,6 @@
 
 (def polygon-5-testcase
   (hash-map
-    :plane   [17.694231 83.277054]
     :polygon [[17.69513 83.267544]
               [17.687503 83.277581]
               [17.686155 83.283865]
@@ -143,7 +138,6 @@
 
 (def polygon-6-testcase
   (hash-map
-    :plane   [53.504833 8.514603]
     :polygon [[53.530342 8.557599]
               [53.516751 8.526092]
               [53.5043 8.503495]
@@ -166,7 +160,6 @@
 
 (def polygon-7-testcase
   (hash-map
-    :plane   [19.68 -92.087997]
     :polygon [[19.984985, -91.791344]
               [19.974062, -92.040572]
               [20.035413, -92.146439]
@@ -185,13 +178,74 @@
               [19.282991 -91.691915]
               [19.955085 -92.656947]]))
 
+;; ---
+
+(def polygon-8-testcase
+  (hash-map
+    :polygon [[89.000000 -180.000000]
+              [89.000000   90.000000]
+              [89.000000    0.000000]
+              [89.000000  -90.000000]]
+    :in      [[90.000000    0.000000]
+              [89.592111  179.835191]
+              [89.342358   20.866850]
+              [89.169008   95.153995]
+              [89.214631 -100.801801]
+              [89.402078  -48.696061]]
+    :out     [[88.796244  -58.737721]
+              [88.973322 -130.237267]
+              [89.038269  107.637581]
+              [89.199051   33.769907]]))
+
+;; ---
+
+(def polygon-9-testcase
+  (hash-map
+    :polygon [[-15.290669  179.159774]
+              [-11.469978  179.626362]
+              [ -9.559677 -177.255858]
+              [-13.678565 -174.857297]
+              [-17.228967 -177.598549]]
+    :in      [[-14.972233 -179.061833]
+              [-12.878095 -175.870292]
+              [-11.077709 -178.783063]
+              [-16.701649 -177.488788]
+              [-15.287844  179.659979]
+              [-13.002656  179.634470]]
+    :out     [[-13.83988   177.424859]
+              [-10.437507 -175.469865]
+              [ -9.427190 -179.749471]
+              [-16.000735 -176.239247]]))
+
+
+;; ---
+
+(def polygon-10-testcase
+  (hash-map
+    :polygon [[ 1.000000  0.000000]
+              [ 0.000000  1.000000]
+              [-1.000000  0.000000]
+              [-0.956165 -2.189761]
+              [ 0.000000 -1.000000]]
+    :in      [[0.000000  0.000000]
+              [0.410995  0.326637]
+              [0.625476 -0.177724]]
+    :out     [[ 0.967166 -1.309784]
+              [ 1.411533  0.873626]
+              [ 0.129689  1.802141]
+              [-0.956165 -2.189761]]))
+
 
 ;; --- Function Helpers
 
 (defn -test-point-inclusion
   [direction tc expected]
   (doseq [pt (direction tc)]
-    (is (= (point-in-polygon? pt (:polygon tc)) expected))))
+    ;; Test polygon orientation 1
+    (is (= (point-in-polygon? pt (:polygon tc)) expected))
+
+    ;; Test polygon reverse orientation
+    (is (= (point-in-polygon? pt (reverse (:polygon tc))) expected))))
 
 (defn test-point-in-polygon
   [tc]
@@ -217,7 +271,10 @@
     (test-point-in-polygon polygon-4-testcase)
     (test-point-in-polygon polygon-5-testcase)
     (test-point-in-polygon polygon-6-testcase)
-    (test-point-in-polygon polygon-7-testcase))
+    (test-point-in-polygon polygon-7-testcase)
+    (test-point-in-polygon polygon-8-testcase)
+    (test-point-in-polygon polygon-9-testcase)
+    (test-point-in-polygon polygon-10-testcase))
 
   (testing "Outside"
     (test-point-out-polygon polygon-1-testcase)
@@ -226,4 +283,7 @@
     (test-point-out-polygon polygon-4-testcase)
     (test-point-out-polygon polygon-5-testcase)
     (test-point-out-polygon polygon-6-testcase)
-    (test-point-out-polygon polygon-7-testcase)))
+    (test-point-out-polygon polygon-7-testcase)
+    (test-point-out-polygon polygon-8-testcase)
+    (test-point-out-polygon polygon-9-testcase)
+    (test-point-out-polygon polygon-10-testcase)))
