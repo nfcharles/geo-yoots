@@ -8,28 +8,6 @@
 
 
 
-;; ---------
-;; - Utils -
-;; ---------
-
-(def distance-threshold 0.0809935) ; nautical miles (150 meters)
-(def km->nautical-mile 0.539957)
-
-
-(defn compare-distance
-  [expected actual & {:keys [threshold]
-                      :or {threshold distance-threshold}}]
-    (is (<= (Math/abs (- expected (* km->nautical-mile actual))) threshold)))
-
-(defn compare-boolean
-  [expected actual]
-  (loop [xs (seq (map vector expected actual))]
-    (if-let [x (first xs)]
-      (let [[a b] x]
-        (is (= a b))
-        (recur (rest xs))))))
-
-
 ;; ============
 ;; - Fixtures -
 ;; ============
@@ -193,7 +171,7 @@
       (doseq [[latlon expected j] (map vector (:points test) (:dists test) (range 1 (inc (count (:points test)))))]
         (testing (format "Circle Test Case %s.%s" i j)
           (let [circle (:polygon test)]
-            (compare-distance expected (geo.sphere.dist/to-circle latlon (:center test) (:radius test)) :threshold 0.001)))))))
+            (test.util/compare-distance expected (geo.sphere.dist/to-circle latlon (:center test) (:radius test)) :threshold 0.001)))))))
 
 
 ;; ---
@@ -207,5 +185,5 @@
         (testing (format "Polygon Test Case %s.%s" i j)
           (let [poly (:polygon test)]
             ;; Test both orientations of polygons
-            (compare-distance expected (geo.sphere.signed-dist/to-polygon latlon (reverse poly)))
-            (compare-distance expected (geo.sphere.signed-dist/to-polygon latlon poly))))))))
+            (test.util/compare-distance expected (geo.sphere.signed-dist/to-polygon latlon (reverse poly)))
+            (test.util/compare-distance expected (geo.sphere.signed-dist/to-polygon latlon poly))))))))

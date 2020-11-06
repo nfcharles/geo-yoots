@@ -7,27 +7,6 @@
 
 
 
-;; ---------
-;; - Utils -
-;; ---------
-
-(def distance-threshold 0.0809935) ; nautical miles (150 meters)
-(def km->nautical-mile 0.539957)
-
-(defn compare-distance
-  [expected actual & {:keys [threshold]
-                      :or {threshold distance-threshold}}]
-    (is (<= (Math/abs (- expected (* km->nautical-mile actual))) threshold)))
-
-(defn compare-boolean
-  [expected actual]
-  (loop [xs (seq (map vector expected actual))]
-    (if-let [x (first xs)]
-      (let [[a b] x]
-        (is (= a b))
-        (recur (rest xs))))))
-
-
 ;; ============
 ;; - Fixtures -
 ;; ============
@@ -193,41 +172,37 @@
 ;; - UTILS
 ;; ---
 
+;; ===
+;; Test Source
+;; ===
+;; https://rdrr.io/cran/geosphere/man/alongTrackDistance.html
+;; ---
+;;
+;; library(geosphere)
+;; alongTrackDistance(c(1.0,0.0),c(0.0,-1.0),c(1.077389,-1.089144), r=.63728)
+;; 0.007923432  M
+;; 79.23432     KM
+;; 42.783110151 NM
+
 (deftest alongtrack-distance-test
   (testing "GC 1"
     (let [ct-dist (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])
           d13     (geo.sphere.dist/haversine [0.0 1.0] [-1.089144 1.077389])]
-      (test.util/compare-float
-        (* geo.const/km->nm (geo.sphere.dist/alongtrack-distance2 d13 ct-dist))
-        43.14639))))
-
+      (test.util/compare-distance 42.783110151 (geo.sphere.dist/alongtrack-distance2 d13 ct-dist)))))
 
 (deftest crosstrack-distance-test
   (testing "GC 2.1"
-    (test.util/compare-float
-      (Math/abs (* geo.const/km->nm
-                  (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
-      49.52030311))
+    (test.util/compare-distance 49.52030311 (Math/abs (geo.sphere.dist/crosstrack-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0]))))
 
   (testing "GC 2.2"
-    (test.util/compare-float
-      (test.util/round-float
-        (Math/abs (geo.sphere.dist/crosstrack-distance [51 69] [40.5 60.5] [50.5 80.5])) 1)
-      479.6 :threshold 0.1001)))
-
+    (test.util/compare-distance 479.6 (Math/abs (geo.sphere.dist/crosstrack-distance [51 69] [40.5 60.5] [50.5 80.5])) :factor 1)))
 
 (deftest crossarc-distance-test
   (testing "GC 3.1"
-    (test.util/compare-float
-      (Math/abs (* geo.const/km->nm
-                  (geo.sphere.dist/crossarc-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0])))
-      49.52030311 :threadshold 0.1))
+    (test.util/compare-distance 49.52030311 (Math/abs (geo.sphere.dist/crossarc-distance [-1.089144 1.077389] [0.0 1.0] [-1.0 0.0]))))
 
   (testing "GC 3.2"
-    (test.util/compare-float
-      (test.util/round-float
-        (Math/abs (geo.sphere.dist/crossarc-distance [51 69] [40.5 60.5] [50.5 80.5])) 1)
-      479.6 :threshold 0.1001)))
+    (test.util/compare-distance 479.6 (Math/abs (geo.sphere.dist/crossarc-distance [51 69] [40.5 60.5] [50.5 80.5])) :factor 1)))
 
 
 ;; ---
@@ -240,15 +215,14 @@
       (doseq [[latlon expected j] (map vector (:points test) (:dists test) (range 1 (inc (count (:points test)))))]
         (testing (format "Polygon Test Case %s.%s" i j)
           (let [poly (:polyline test)]
-            ;; Test both orientations of polygons
-            (compare-distance expected (geo.sphere.dist/to-polyline latlon poly))))))))
+            (test.util/compare-distance expected (geo.sphere.dist/to-polyline latlon poly))))))))
 
 (deftest point-within-distance-to-line-test
   (doseq [case [[3 [false true false false]] [5 [true true true false]]]]
     (let [[limit expected] case
           actual (map #(geo.sphere.dist/within-distance-to-polyline? limit % (:polyline ptest-1)) (:points ptest-1))]
       (testing (format "Within Polyline: limit %s" limit)
-        (compare-boolean expected actual)))))
+        (test.util/compare-boolean expected actual)))))
 
 
 ;; ---
@@ -261,14 +235,14 @@
       (doseq [[latlon expected j] (map vector (:points test) (:dists test) (range 1 (inc (count (:points test)))))]
         (testing (format "Circle Test Case %s.%s" i j)
           (let [circle (:polygon test)]
-            (compare-distance expected (geo.sphere.dist/to-circle latlon (:center test) (:radius test)) :threshold 0.001)))))))
+            (test.util/compare-distance expected (geo.sphere.dist/to-circle latlon (:center test) (:radius test)) :threshold 0.001)))))))
 
 (deftest point-within-distance-to-circle-test
   (doseq [case [[1 [false false true]] [1.5 [true false true]]]]
     (let [[limit expected] case
           actual (map #(geo.sphere.dist/within-distance-to-circle? limit % (:center ctest-1) (:radius ctest-1)) (:points ctest-1))]
       (testing (format "Within Circle: limit %s" limit)
-        (compare-boolean expected actual)))))
+        (test.util/compare-boolean expected actual)))))
 
 
 ;; ---
@@ -282,12 +256,12 @@
         (testing (format "Polygon Test Case %s.%s" i j)
           (let [poly (:polygon test)]
             ;; Test both orientations of polygons
-            (compare-distance expected (geo.sphere.dist/to-polygon latlon (reverse poly)))
-            (compare-distance expected (geo.sphere.dist/to-polygon latlon poly))))))))
+            (test.util/compare-distance expected (geo.sphere.dist/to-polygon latlon (reverse poly)))
+            (test.util/compare-distance expected (geo.sphere.dist/to-polygon latlon poly))))))))
 
 (deftest point-within-distance-to-polygon-test
   (doseq [case [[200 [true false true false false]] [500 [true false true true true]]]]
     (let [[limit expected] case
           actual (map #(geo.sphere.dist/within-distance-to-polygon? limit % (:polygon test-3)) (:points test-3))]
       (testing (format "Within Simple Polygon: limit %s" limit)
-        (compare-boolean expected actual)))))
+        (test.util/compare-boolean expected actual)))))
