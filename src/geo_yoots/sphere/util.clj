@@ -1,12 +1,14 @@
 (ns geo-yoots.sphere.util
   (:require [clojure.pprint :as pp]
             [geo-yoots.constants :as geo.consts]
+            [geo-yoots.util.core :as geo.util]
+            [geo-yoots.sphere.util :as geo.sphere.util]
             [clojure.core.matrix :as mtx]
             [clojure.core.matrix.operators :as mtx.op]))
 
 
-(mtx/set-current-implementation :vectorz)
 
+(mtx/set-current-implementation :vectorz)
 
 ;; ====
 ;; - Lat/Lon coordinates to cartesian coordinates
@@ -134,11 +136,23 @@
   [latlon]
   (mtx/matrix (latlon->cartesian latlon)))
 
+(defn a->b-vector
+  "Create vector from points A & B"
+  [av bv & {:keys [scale]
+          :or {scale 1}}]
+  (mtx.op/* scale (mtx.op/- bv av)))
+
+;; -----
+;; - Normals
+;; -----
+
 (defn normalize
   [a]
   (let [av (mtx/matrix a)]
     (mtx.op// av (mtx/magnitude av))))
 
+;; http://mathworld.wolfram.com/SphericalCoordinates.html
+;; http://mathworld.wolfram.com/NormalVector.html
 (defn normal-vector
   "Calculates normal-vector.  For unit vector, `radius` is 1"
   [latlon & {:keys [radius]
@@ -155,23 +169,12 @@
   [latlon]
   (normal-vector latlon :radius 1))
 
+(defn polygon->normal
+  [vertices]
+  (let [[a b c _] vertices]
+    (mtx/cross (a->b-vector a b) (a->b-vector a c))))
+
 ;; ---
-;; - Vectorized
-;; ---
-
-(defn a->b-vector
-  "Create vector from points A & B"
-  [av bv & {:keys [scale]
-          :or {scale 1}}]
-  (mtx.op/* scale (mtx.op/- bv av)))
-
-(defn ortho-plane-projection
-  [av pv unit-normal]
-  #_(println (format "ORTHO_PROJECTION: AV[%s], PV[%s], NORMAL[%s]" av pv unit-normal))
-  (mtx.op/- av (mtx.op/* (mtx/dot (mtx.op/- av pv) unit-normal) unit-normal)))
-
-
-;; ----
 ;; - Distance
 ;; ---
 
@@ -179,3 +182,49 @@
   "Distance of point to plane[n * (x - x0) = 0]"
   [pt plane normal]
   (/ (Math/abs (mtx/dot normal (a->b-vector plane pt))) (mtx/magnitude normal)))
+
+
+;; ---
+;; - Vector Projections
+;; ---
+
+(defn ortho-plane-projection
+  [av pv unit-normal]
+  #_(println (format "ORTHO_PROJECTION: AV[%s], PV[%s], NORMAL[%s]" av pv unit-normal))
+  (mtx.op/- av (mtx.op/* (mtx/dot (mtx.op/- av pv) unit-normal) unit-normal)))
+
+(defn _vertices->projection-plane
+  [pv unit-nv vertices]
+  (loop [xs  vertices
+         acc []]
+    (if-let [x (first xs)]
+      (let [av (mtx/matrix (latlon->cartesian x))]
+        (recur (rest xs) (conj acc (ortho-plane-projection av pv unit-nv))))
+      acc)))
+
+(defn vertices->projection-plane
+  [vertices]
+  (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
+        cent       (centroid uniq-verts)]
+    (_vertices->projection-plane
+      (latlon->vector cent)     ;; projection plane pt
+      (unit-normal-vector cent) ;; projection plane unit normal
+      uniq-verts)))
+
+
+;; ---
+;; - Polygon Partitions
+;; ---
+
+(defn partition-polygon
+  "Generates triangular partitions for a polygon"
+  [vertices]
+  (let [anchor (first vertices)]
+    (loop [xs  (rest vertices)
+           tri [anchor]
+           acc []]
+      (if-let [x (first xs)]
+        (if (= (count tri) 2)
+          (recur xs [anchor] (conj acc (conj tri x)))
+          (recur (rest xs) (conj tri x) acc))
+        acc))))

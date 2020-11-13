@@ -3,7 +3,7 @@
             [clojure.core.matrix :as mtx]
             [geo-yoots.test-util :as test.util]
             [geo-yoots.constants :as geo.const]
-            [geo-yoots.sphere.util :refer :all])) ;;:as geo.sphere.util]))
+            [geo-yoots.sphere.util :refer :all]))
 
 
 ;; --- Test Helpers
@@ -126,3 +126,7 @@
           q   (mtx/matrix [ 3  8 -1]) ;; point off plane
           unv (normalize [4 -1  2])]  ;; unit normal vector
       (-test-ortho-plane-projection q p unv (mtx/matrix [2.047619047619047,8.238095238095239,-1.4761904761904765])))))
+
+(deftest polygon-partitions-test
+  (testing "Simple vertices"
+    (= (partition-polygon (range 5)) [[0 1 2] [0 2 3] [0 3 4]])))

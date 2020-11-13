@@ -258,11 +258,6 @@
 
 ;; --- Test Functions
 
-(deftest triangle-split-test
-  (testing "Simple vertices"
-    (= (gen-triangle-partitions (range 5)) [[0 1 2] [0 2 3] [0 3 4]])))
-
-
 (deftest point-inclusion-test
   (testing "Inside"
     (test-point-in-polygon polygon-1-testcase)
