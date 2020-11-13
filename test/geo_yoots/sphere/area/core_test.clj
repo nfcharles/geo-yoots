@@ -58,3 +58,8 @@
       (doseq [[i case] (map list (range (count cases)) cases)]
         (testing (format "Case: %d" i)
           (is (= (geo.sphere.area/apply-shoelace (:mtx case)) (:area case))))))))
+
+
+;; ----
+;; - TODO: Add Area Tests - Move from area.core package and formalize.
+;; ---

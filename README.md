@@ -1,9 +1,16 @@
 # geo-yoots
 
-Tools for working with geometry things
+Tools for working with geometry things on Earth.
 
-Functions are implemented using spherical trigonometry (https://en.wikipedia.org/wiki/Spherical_trigonometry, https://mathworld.wolfram.com/SphericalCoordinates.html)
-and vector maths.
+Distance Functions are implemented using spherical trigonometry and vector maths.
+ - https://en.wikipedia.org/wiki/Spherical_trigonometry
+ - https://mathworld.wolfram.com/SphericalCoordinates.html
+
+
+Area Functions use Shoelace algorithm
+ - https://en.wikipedia.org/wiki/Shoelace_formula
+ - https://en.wikipedia.org/wiki/Rotation_matrix
+
 
 ## Features
 
@@ -15,7 +22,7 @@ Supported objects
 3. Point to *circle* distance
 4. Point to *polygon* distance
 
-Points are `latitude` and `longitude` pairs. Units are in kilometers.
+Points are (`latitude`, `longitude`) pairs. Units are in kilometers.
 
 #### Point to point
 
@@ -54,9 +61,6 @@ Points are `latitude` and `longitude` pairs. Units are in kilometers.
 ;; polygon-vertices -> [[lat lon] [lat lon] ... ]
 ;; return           -> distance
 
-;; Unsigned impl
-(geo.sphere.distance/to-polygon pt polygon-vertices)
-
 (geo.sphere.distance.signed/to-polygon pt polygon-vertices)
 ```
 
@@ -78,6 +82,26 @@ Are input points within `distance` to geometry.
 
 ```clojure
 (geo.sphere.impl.inclusion/point-in-polygon? pt vertices)
+```
+
+### Area Functions
+
+Calculate polygon areas using the `sphere.area` package.
+
+```clojure
+(def poly1 [[ 1.000000  0.000000]
+            [ 0.000000  1.000000]
+            [-1.000000  0.000000]
+            [ 0.000000 -1.000000]])
+
+(def poly2 [[-15.290669  179.159774]
+            [-11.469978  179.626362]
+            [ -9.559677 -177.255858]
+            [-13.678565 -174.857297]
+            [-17.228967 -177.598549]])
+
+(geo.sphere.area/polgyon poly1) ;; 24740.08 KM
+(geo.sphere.area/polgyon poly1) ;; 338457.92 KM
 ```
 
 ## License
