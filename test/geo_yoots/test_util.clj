@@ -14,6 +14,13 @@
     (println (format "ACTUAL[%s]=%s, THRESHOLD[%s]=%s" (* actual factor) percent-diff expected distance-threshold))
     (is (<= percent-diff threshold))))
 
+(defn compare-area
+  [expected actual & {:keys [threshold]
+                      :or {threshold distance-threshold}}]
+  (let [percent-diff (/ (Math/abs (- expected actual)) expected)]
+    (println (format "ACTUAL[%s]=%s, THRESHOLD[%s]=%s" actual percent-diff expected distance-threshold))
+    (is (<= percent-diff threshold))))
+
 (defn compare-boolean
   [expected actual]
   (loop [xs (seq (map vector expected actual))]

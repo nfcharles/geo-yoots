@@ -101,7 +101,7 @@ Calculate polygon areas using the `sphere.area` package.
             [-17.228967 -177.598549]])
 
 (geo.sphere.area/polgyon poly1) ;; 24740.08 KM
-(geo.sphere.area/polgyon poly1) ;; 338457.92 KM
+(geo.sphere.area/polgyon poly2) ;; 338457.92 KM
 ```
 
 ## License
