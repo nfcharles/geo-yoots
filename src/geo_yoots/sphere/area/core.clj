@@ -107,12 +107,16 @@
 
 (defn rotation-matrix-2
   [norm]
-  (let [x (.get norm X)
-        y (.get norm Y)
-        z (.get norm Z)]
-    (mtx/matrix [[(_00 x y z) (_01 x y z) (_02 x y z)]
-                 [(_10 x y z) (_11 x y z) (_12 x y z)]
-                 [(_20 x y z) (_21 x y z) (_22 x y z)]])))
+  (try
+    (let [x (.get norm X)
+          y (.get norm Y)
+          z (.get norm Z)]
+      (mtx/matrix [[(_00 x y z) (_01 x y z) (_02 x y z)]
+                   [(_10 x y z) (_11 x y z) (_12 x y z)]
+                   [(_20 x y z) (_21 x y z) (_22 x y z)]]))
+    (catch java.lang.ArithmeticException e
+      (println (format "Error generating rotation matrix: %s; defaulting to identity matrix." e))
+      (mtx/identity-matrix 3))))
 
 
 ;; -----------
@@ -126,6 +130,7 @@
 (defn rotate
   [rot-mtx pt]
   (mtx/inner-product rot-mtx pt))
+
 
 (defn shoelace-matrix
   [vertices]
