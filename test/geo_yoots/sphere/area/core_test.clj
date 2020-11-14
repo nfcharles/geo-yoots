@@ -217,7 +217,7 @@
            [ 1.000000  180.000000]]
     :area 24764.63))
 
-(def poly12
+(def poly13
   (hash-map
     :poly [[-89.000000   0.000000]
            [-89.000000  90.000000]
@@ -227,7 +227,7 @@
 
 
 (deftest area-test
-  (let [cases [poly1 poly2 poly3 poly4 poly5 poly6 poly7 poly8 poly9 poly10 poly11 poly12]]
+  (let [cases [poly1 poly2 poly3 poly4 poly5 poly6 poly7 poly8 poly9 poly10 poly11 poly12 poly13]]
     (testing "Areas"
       (doseq [[i _case] (map list (range (count cases)) cases)]
         (testing (format "Case: %d" i)

@@ -115,6 +115,8 @@
                    [(_10 x y z) (_11 x y z) (_12 x y z)]
                    [(_20 x y z) (_21 x y z) (_22 x y z)]]))
     (catch java.lang.ArithmeticException e
+      ;; We're in translation plane already, use identity matrix - but we could probably test
+      ;; for this condition and bypass altogether.
       (println (format "Error generating rotation matrix: %s; defaulting to identity matrix." e))
       (mtx/identity-matrix 3))))
 
