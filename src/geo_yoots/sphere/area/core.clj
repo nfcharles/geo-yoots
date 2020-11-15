@@ -166,6 +166,15 @@
                  ( + acc (- (* x_i y_i+1) (* x_i+1 y_i)))))
         (/ (Math/abs acc) 2)))))
 
+
+;; ====================
+;; -  Area Functions  -
+;; ====================
+
 (defn polygon
   [vertices]
   (apply-shoelace (shoelace-matrix vertices)))
+
+(defn circle
+  [radius]
+  (* Math/PI (sq radius)))
