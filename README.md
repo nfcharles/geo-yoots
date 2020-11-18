@@ -84,7 +84,7 @@ user=> (geo.sphere.dist/to-polyline (nth pts 0) polyline)
 ```
 
 #### Point to polygon
-![alt text](./Distance_Tuvalu-Tonga-2-2.jpg "Tuvalu_Tonga_Convex_Polygon_Distances")
+![alt text](./images/Distance_Tuvalu-Tonga-2-2.jpg "Tuvalu_Tonga_Convex_Polygon_Distances")
 _polygon-1 above_
 
 ```clojure
@@ -126,7 +126,7 @@ Are input points within `distance` to geometry.
 
 Calculate polygon areas using the `sphere.area` package.
 
-![alt text](./Area-Distance_Tuvalu-Tonga-2-2.jpg "Tuvalu_Tonga_Convex_Polygon")
+![alt text](./images/Area-Distance_Tuvalu-Tonga-2-2.jpg "Tuvalu_Tonga_Convex_Polygon")
 _polygon-1 above_
 
 ```clojure
