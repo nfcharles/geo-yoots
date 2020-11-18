@@ -76,6 +76,20 @@
 ;; -  Cases -
 ;; ----------
 
+(def polyline
+  [[-15.290669  179.159774]
+   [-11.469978  179.626362]
+   [ -9.559677 -177.255858]])
+
+(def polygon
+  [[-15.290669  179.159774]
+   [-11.469978  179.626362]
+   [ -9.559677 -177.255858]
+   [-13.678565 -174.857297]
+   [-17.228967 -177.598549]
+   [-13.836214 -177.062038]
+   [-12.340054 -178.316774]])
+
 (def poly1
   (hash-map
     :poly [[ 1.000000  0.000000]
@@ -91,7 +105,7 @@
            [ -9.559677 -177.255858]
            [-13.678565 -174.857297]
            [-17.228967 -177.598549]]
-    :area 338550.27))
+    :area 338531.39))
 
 (def poly3
   (hash-map
@@ -304,6 +318,16 @@
             [25.3084516319 56.4280950971]]
     :area  1409.51))
 
+(def poly18
+  (hash-map
+    :poly [[-15.290669  179.159774]
+           [-11.469978  179.626362]
+           [ -9.559677 -177.255858]
+           [-13.678565 -174.857297]
+           [-17.228967 -177.598549]
+           [-13.836214 -177.062038]
+           [-12.340054 -178.316774]]
+    :area 221930.52))
 
 ; ---
 
@@ -324,7 +348,7 @@
 ;; -----------
 
 (deftest polygon-area-test
-  (let [cases [poly1 poly2 poly3 poly4 poly5 poly6 poly7 poly8 poly9 poly10 poly11 poly12 poly13 poly14 poly15 poly16 poly17]]
+  (let [cases [poly1 poly2 poly3 poly4 poly5 poly6 poly7 poly8 poly9 poly10 poly11 poly12 poly13 poly14 poly15 poly16 poly17 poly18]]
     (doseq [[i _case] (map list (range (count cases)) cases)]
       (testing (format "Polygon Area Case: %d" i)
         (test.util/compare-area (:area _case) (geo.sphere.area/polygon (:poly _case)))))))
