@@ -2,7 +2,7 @@
   (:require [geo-yoots.constants :as geo.const]
             [geo-yoots.util.core :as geo.util]
             [geo-yoots.sphere.distance.core :as geo.sphere.dist]
-            [geo-yoots.sphere.impl.inclusion :as geo.sphere.incl]))
+            [geo-yoots.sphere.inclusion :as geo.sphere.incl]))
 
 
 

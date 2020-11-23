@@ -1,6 +1,6 @@
-(ns geo-yoots.sphere.impl.inclusion-test
+(ns geo-yoots.sphere.inclusion-test
   (:require [clojure.test :refer :all]
-            [geo-yoots.sphere.impl.inclusion :refer :all]))
+            [geo-yoots.sphere.inclusion :refer :all]))
 
 
 ;; ---- Inclusion Fixtures
