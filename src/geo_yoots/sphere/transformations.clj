@@ -3,12 +3,12 @@
             [geo-yoots.constants :as geo.consts]
             [geo-yoots.util.core :as geo.util]
             [geo-yoots.sphere.util :as geo.sphere.util]
-            [geo-yoots.sphere.centroid :as geo.sphere.centroid]
             [clojure.core.matrix :as mtx]
             [clojure.core.matrix.operators :as mtx.op]))
 
 
 (mtx/set-current-implementation :vectorz)
+
 
 
 ;; =============
@@ -85,10 +85,10 @@
 (defn vertices->projection-plane
   [vertices]
   (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
-        cent       (geo.sphere.centroid/points uniq-verts)]
+        cent       (geo.sphere.util/centroid uniq-verts)]
     (_vertices->projection-plane
-      (latlon->vector cent) ;; projection plane pt
-      (unit-normal-vector cent)             ;; projection plane unit normal
+      (latlon->vector cent)      ;; projection plane pt
+      (unit-normal-vector cent)  ;; projection plane unit normal
       uniq-verts)))
 
 
@@ -207,3 +207,8 @@
       ;; for this condition and bypass altogether.
       (println (format "Error generating rotation matrix: %s; defaulting to identity matrix." e))
       (mtx/identity-matrix 3))))
+
+;; rot-mtx[3 x 3] X pt-mtx[3 x 1] => 3 x 1
+(defn rotate
+  [rot-mtx pt]
+  (mtx/inner-product rot-mtx pt))

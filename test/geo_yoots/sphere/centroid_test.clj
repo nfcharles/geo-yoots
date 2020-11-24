@@ -4,24 +4,14 @@
             [geo-yoots.sphere.centroid :refer :all]))
 
 
-
-
-;; --- Test Helpers
-
-(defn -test-centroid
-  [pts expected]
-  (is (= (points pts) expected)))
-
-
-
-(deftest centroid-test
-  (testing "Location 1"
-    (-test-centroid [[ 1.0  0.0]
-                     [ 0.0  1.0]
-                     [-1.0  0.0]
-                     [ 0.0 -1.0]] [0.0 0.0]))
-
-  (testing "Location 2"
-    (-test-centroid [[-21.1333 -175.2   ]  ; Tonga
-                     [ -8.53333 179.2167]] ; Tuvalu
-                    [-14.850146658102771 -178.07333636886855])))
+(deftest centroid-polygon-test
+  (testing "Location 1 - Polygon"
+    (test.util/compare-latlon
+      (polygon [[-15.290669  179.159774]
+                     [-11.469978  179.626362]
+                     [ -9.559677 -177.255858]
+                     [-13.678565 -174.857297]
+                     [-17.228967 -177.598549]
+                     [-13.836214 -177.062038]
+                     [-12.340054 -178.316774]])
+      [-13.350482379748883 -178.04316885079348])))

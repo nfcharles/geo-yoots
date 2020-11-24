@@ -45,3 +45,33 @@
     (-test-spherical [17.5  -135] 1.0 -135.0  72.5))
   (testing "Coordinates (-90, -180)"
     (-test-spherical [-90 -180] 1.0   -180.0 180.0)))
+
+
+;; --- Test Helpers
+
+(defn -test-centroid
+  [pts expected]
+  (test.util/compare-latlon (centroid pts) expected))
+
+
+(deftest centroid-points-test
+  (testing "Location 1 - Points"
+    (-test-centroid [[ 1.0  0.0]
+                     [ 0.0  1.0]
+                     [-1.0  0.0]
+                     [ 0.0 -1.0]] [0.0 0.0]))
+
+  (testing "Location 2 - Points"
+    (-test-centroid [[-21.1333 -175.2   ]  ; Tonga
+                     [ -8.53333 179.2167]] ; Tuvalu
+                    [-14.850146658102771 -178.07333636886855]))
+
+  (testing "Location 3 - Points(Polygon)"
+    (-test-centroid [[-15.290669  179.159774]
+                     [-11.469978  179.626362]
+                     [ -9.559677 -177.255858]
+                     [-13.678565 -174.857297]
+                     [-17.228967 -177.598549]
+                     [-13.836214 -177.062038]
+                     [-12.340054 -178.316774]]
+                    [-13.350482394698734 -178.04316885779255])))

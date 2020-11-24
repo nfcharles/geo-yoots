@@ -6,6 +6,15 @@
 (def distance-threshold 0.005) ; %
 (def km->nautical-mile 0.539957)
 
+
+(defn round-float
+  [x scale]
+  (.floatValue (.setScale (bigdec x) scale BigDecimal/ROUND_HALF_UP)))
+
+;; ----
+;; - Comparison Functions
+;; ---
+
 (defn compare-distance
   [expected actual & {:keys [threshold factor]
                       :or {threshold distance-threshold
@@ -29,6 +38,7 @@
         (is (= a b))
         (recur (rest xs))))))
 
-(defn round-float
-  [x scale]
-  (.floatValue (.setScale (bigdec x) scale BigDecimal/ROUND_HALF_UP)))
+(defn compare-latlon
+  [x y]
+  (let [scale 6]
+    (is (= (map #(round-float % scale) x) (map #(round-float % scale) y)))))

@@ -101,3 +101,26 @@
 (defn spherical->cartesian
   [r-theta-phi]
   [(spherical->x r-theta-phi) (spherical->y r-theta-phi) (spherical->z r-theta-phi)])
+
+
+;; ===
+;; - Point cloud centroid
+;; ---
+;;
+;; Find centroid of set of (lat, lon) points
+;;
+;; https://en.wikipedia.org/wiki/Centroid
+;; ---
+
+(defn centroid
+  [pts]
+  (let [len (count pts)]
+    (loop [xs pts
+           x 0
+           y 0
+           z 0]
+      (if-let [pt (first xs)]
+        (recur (rest xs) (+ x (latlon->x pt))
+                         (+ y (latlon->y pt))
+                         (+ z (latlon->z pt)))
+        (cartesian->latlon [(/ x len) (/ y len) (/ z len)])))))

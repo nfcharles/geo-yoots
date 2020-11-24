@@ -22,13 +22,6 @@
 ;; - https://en.wikipedia.org/wiki/Shoelace_formula
 ;; ---
 
-
-;; rot-mtx[3 x 3] X pt-mtx[3 x 1] => 3 x 1
-(defn rotate
-  [rot-mtx pt]
-  (mtx/inner-product rot-mtx pt))
-
-
 (defn shoelace-matrix
   [vertices]
   (let [pvtx        (geo.sphere.xform/vertices->projection-plane vertices)
@@ -39,7 +32,7 @@
       (loop [xs pvtx
              acc []]
         (if-let [x (first xs)]
-          (let [vtx (mtx.op/* geo.const/earth-radius (rotate rot-mtx x))]
+          (let [vtx (mtx.op/* geo.const/earth-radius (geo.sphere.xform/rotate rot-mtx x))]
             #_(println (format "TRANSLATING POINT= (%s -> %s" x vtx))
             (recur (rest xs) (conj acc [(.get vtx X) (.get vtx Y)])))
           (mtx/matrix acc))))))
@@ -47,15 +40,15 @@
 (defn apply-shoelace
   [pts]
   (let [n (.rowCount pts)]
-    (loop [i  0
+    (loop [i   0
            acc 0]
       (if (< i n)
         (let [i_idx   (mod i n)
               i+1_idx (mod (inc i) n)
-              x_i   (.get pts i_idx   X)
-              y_i+1 (.get pts i+1_idx Y)
-              x_i+1 (.get pts i+1_idx X)
-              y_i   (.get pts i_idx   Y)]
+              x_i     (.get pts i_idx   X)
+              y_i+1   (.get pts i+1_idx Y)
+              x_i+1   (.get pts i+1_idx X)
+              y_i     (.get pts i_idx   Y)]
           #_(println (format "%s * %s - %s * %s" x_i y_i+1 x_i+1 y_i))
           (recur (inc i)
                  ( + acc (- (* x_i y_i+1) (* x_i+1 y_i)))))
