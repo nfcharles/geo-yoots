@@ -1,16 +1,6 @@
 # geo-yoots
 
-Tools for working with geometry things on Earth.
-
-Distance Functions are implemented using spherical trigonometry and vector maths.
- - https://en.wikipedia.org/wiki/Spherical_trigonometry
- - https://mathworld.wolfram.com/SphericalCoordinates.html
-
-
-Area Functions use Shoelace algorithm
- - https://en.wikipedia.org/wiki/Shoelace_formula
- - https://en.wikipedia.org/wiki/Rotation_matrix
-
+Functions for working with location objects on Earth.
 
 ## Features
 
@@ -139,6 +129,16 @@ user=> (geo.sphere.area/polygon polygon-1)
 user=> (geo.sphere.area/polygon polygon-2)
 24740.08632334546
 ```
+
+## Implementation
+
+Distance Functions
+ - https://en.wikipedia.org/wiki/Spherical_trigonometry
+ - https://mathworld.wolfram.com/SphericalCoordinates.html
+
+Area Functions
+ - https://en.wikipedia.org/wiki/Shoelace_formula
+ - https://en.wikipedia.org/wiki/Rotation_matrix
 
 
 ## License
