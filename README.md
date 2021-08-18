@@ -1,5 +1,5 @@
 # geo-yoots
-[![Build Status](https://travis-ci.org/nfcharles/geo-yoots.svg?branch=master)](https://travis-ci.org/nfcharles/geo-yoots)
+[![Build Status](https://travis-ci.com/nfcharles/geo-yoots.svg?branch=master)](https://travis-ci.com/nfcharles/geo-yoots)
 [![codecov](https://codecov.io/gh/nfcharles/geo-yoots/branch/master/graph/badge.svg)](https://codecov.io/gh/nfcharles/geo-yoots)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.nfcharles/geo-yoots.svg)](https://clojars.org/org.clojars.nfcharles/geo-yoots.svg)
 
