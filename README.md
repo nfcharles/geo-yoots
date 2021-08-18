@@ -4,7 +4,7 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.nfcharles/geo-yoots.svg)](https://clojars.org/org.clojars.nfcharles/geo-yoots.svg)
 
 
-Functions for working with location objects on Earth.
+Functions for working with geospatial objects on Earth.
 
 ## Features
 
