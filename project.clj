@@ -1,4 +1,4 @@
-(defproject org.clojars.nfcharles/geo-yoots "0.3.2"
+(defproject org.clojars.nfcharles/geo-yoots "0.3.3"
   :description "Geometry things"
   :url "https://github.com/nfcharles/geo-yoots"
   :license {:name "Eclipse Public License"
