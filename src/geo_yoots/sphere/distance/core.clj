@@ -271,6 +271,25 @@
   (let [edges (geo.util/gen-polyline-edges vertices)]
     (-to-polyline pt edges)))
 
+
+(defn -min-polyline-edge
+  [pt vertices]
+  (loop [xs   vertices
+         edge []
+         acc  Integer/MAX_VALUE]
+    (if-let [x (first xs)]
+      (let [[arc-p1 arc-p2] x
+            dist (crossarc-distance pt arc-p1 arc-p2)]
+        (if (< dist acc)
+          (recur (rest xs) x dist)
+          (recur (rest xs) edge acc)))
+      [edge acc])))
+
+(defn min-polyline-edge
+  [pt vertices]
+  (let [edges (geo.util/gen-polyline-edges vertices)]
+    (-min-polyline-edge pt edges)))
+
 (defn -within-distance-to-polyline?
   [limit pt vertices]
   (loop [xs vertices]
