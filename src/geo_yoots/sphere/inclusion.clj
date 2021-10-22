@@ -8,6 +8,35 @@
             [clojure.core.matrix.operators :as mtx.op]))
 
 
+(def X 0)
+(def Y 1)
+(def Z 2)
+
+(def test-poly
+  [[0 0]
+   [1 1]
+   [3 0]
+   [5 2]
+   [3 5]
+   [2 2]
+   [0 3]])
+
+(def test-points
+  [[false  1   0]
+   [false  1  -2]
+   [true   4   1]
+   [true   3   2]
+   [true   3   3]
+   [true   1   2]
+   [false  1   4]
+   [false -1   2]
+   [true   0   1]
+   [true   5   2]
+   [true   0   2]
+   [true   2 0.5]
+   [false  2 0.4]
+   [false  4   4]])
+
 ;;
 ;; New Projection Method
 ;;
@@ -16,10 +45,8 @@
   [vertices & {:keys [pt] ;; (lat,lon)
                :or {pt nil}}]
   (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
-;;        cent       (geo.sphere.util/centroid uniq-verts)
         ;; Solves antipodal pt -> polygon edgecase projection issues; use augmented centroid for projection plane.
         cent       (geo.sphere.util/centroid (vector (geo.sphere.util/centroid uniq-verts) pt))
-;;      _            (println (format "CENT=%s, CENT_WITH_PT=%s, UBER_CENT=%s" (geo.sphere.util/centroid uniq-verts) (geo.sphere.util/centroid (conj uniq-verts pt)) cent))
 
         ;; projection plane pt
         cv         (geo.sphere.xform/latlon->vector cent)
@@ -36,12 +63,13 @@
           [(geo.sphere.xform/ortho-plane-projection (geo.sphere.xform/latlon->vector pt) cv unit-nv) acc]
           [nil acc])))))
 
+
 ;; ==========================
 ;; -  Point Inclusion Test  -
 ;; -
 ;; -  sources:
 ;; -   * http://erich.realtimerendering.com/ptinpoly/
-;; -   * https://blackpawn.com/texts/pointinpoly/#:~:text=A%20common%20way%20to%20check,but%20it%20is%20very%20slow.
+;; -   * https://blackpawn.com/texts/pointinpoly/
 ;; --------------------------
 
 ;; -----------------------
@@ -65,6 +93,64 @@
     (same-side? pt c a b)))
 
 
+;; ----------------------
+;; - Barycentric
+;; ---
+
+(defn inside-bary?
+  [pt [a b c]]
+  (let [v0    (mtx.op/- c a)
+        v1    (mtx.op/- b a)
+        v2    (mtx.op/- pt a)
+        dot00 (mtx/dot v0 v0)
+        dot01 (mtx/dot v0 v1)
+        dot02 (mtx/dot v0 v2)
+        dot11 (mtx/dot v1 v1)
+        dot12 (mtx/dot v1 v2)
+        invdm (/ 1 (- (* dot00 dot11) (* dot01 dot01)))
+        u     (float (* (- (* dot11 dot02) (* dot01 dot12)) invdm))
+        v     (float (* (- (* dot00 dot12) (* dot01 dot02)) invdm))]
+    (and (>= u 0.0) (>= v 0.0) (< (+ u v) 1.0))))
+
+
+
+;; -----------------------
+;; - Angle Sum
+;; ---
+
+(def epsilon                  0.0000001)
+(def twopi   6.283185307179586476925287)
+(def rtod                    57.2957795)
+
+(defn dist
+  [x y z]
+  (let []
+    (Math/sqrt (+ (* x x) (* y y) (* z z)))))
+
+(defn angle-sum
+  [q pts]
+  ;; For Convex Polygons
+  ;; http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
+  (let [n (count pts)]
+    (loop [i          0
+           anglesum   0
+           costheta nil]
+      (if (< i n)
+        (let [p1-x (- (.get (nth pts i) X) (.get q X))
+              p1-y (- (.get (nth pts i) Y) (.get q Y))
+              p1-z (- (.get (nth pts i) Z) (.get q Z))
+              p2-x (- (.get (nth pts (mod (+ i 1) n)) X) (.get q X))
+              p2-y (- (.get (nth pts (mod (+ i 1) n)) Y) (.get q Y))
+              p2-z (- (.get (nth pts (mod (+ i 1) n)) Z) (.get q Z))
+              d1   (dist p1-x p1-y p1-z)
+              d2   (dist p2-x p2-y p2-z)]
+          (if (<= (* d1 d2) epsilon)
+            twopi
+            (let [costheta (/ (+ (* p1-x p2-x) (* p1-y p2-y) (* p1-z p2-z)) (* d1 d2))]
+              (recur (inc i) (+ anglesum (Math/acos costheta)) costheta))))
+        anglesum))))
+
+
 #_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
@@ -81,7 +167,7 @@
         (odd? acc)))))
 
 
-(defn point-in-polygon?
+#_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
   (let [[pv projected] (vertices->projection-plane3 vertices :pt pt)       ;; Projected Vertices to Plane
@@ -99,11 +185,36 @@
         (odd? acc)))))
 
 
+(defn point-in-polygon?
+  "Returns true if point is in polygon, false otherwise"
+  [pt vertices]
+  (let [[pv projected] (vertices->projection-plane3 vertices :pt pt)       ;; Projected Vertices to Plane
+        ;;angle-sum      (angle-sum pv projected)
+        triangles      (geo.sphere.xform/partition-polygon projected)      ;; Triangle Partitions
+        ]              ;; Test Point
+    ;;(println (format "ANGLE_SUM=%s" angle-sum))
+    (loop [xs triangles
+           acc 0]
+      (if-let [x (first xs)]
+        (recur (rest xs) (+ acc (if (inside-bary? pv x) 1 0)))
+
+        ;; If point intersects with odd number of triangles, inside otherwise outside.
+        (odd? acc)))))
+
+#_(defn point-in-polygon?
+  "Returns true if point is in polygon, false otherwise"
+  [pt vertices]
+  (let [[pv projected] (vertices->projection-plane3 vertices :pt pt)  ;; Projected Vertices to Plane
+        angle-sum      (angle-sum pv projected)]
+    (println (format "ANGLE_SUM=(%s, %s)" twopi angle-sum))
+    (<= (Math/abs (- twopi angle-sum)) epsilon)))
 
 
-;;;;
-;;;; Alt Impl
-;;;;
+
+
+;;;; =================
+;;;; - Alt Impl
+;;;; -----------------
 
 
 (defn coor
@@ -117,7 +228,6 @@
         c (- (coor poly j 0) (coor poly i 0))
         d (- y (coor poly i 1))]
     (float (- (* a b) (* c d)))))
-
 
 (defn point-in-path?
   "Determine if point is in polygon"
@@ -147,62 +257,14 @@
             (recur (inc i) i c))
         c))))
 
-(def test-poly
-  [[0 0]
-   [1 1]
-   [3 0]
-   [5 2]
-   [3 5]
-   [2 2]
-   [0 3]])
 
-(def test-points
-  [[false  1   0]
-   [false  1  -2]
-   [true   4   1]
-   [true   3   2]
-   [true   3   3]
-   [true   1   2]
-   [false  1   4]
-   [false -1   2]
-   [true   0   1]
-   [true   5   2]
-   [true   0   2]
-   [true   2 0.5]
-   [false  2 0.4]
-   [false  4   4]])
 
 #_(doseq [[expected x y] test-points]
   (println (format "(%s, %s), matched=%s" x y (= expected (point-in-path? x y test-poly)) )))
 
 
-#_(defn vertices->projection-plane3
-  [vertices & {:keys [pt]
-               :or {pt nil}}]
-  (println (format "INPUT: PT=%s, VERTICIES=%s" pt vertices))
-  (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
-;;        cent       (geo.sphere.util/centroid uniq-verts)
-        ;; Solves antipodal pt -> polygon edgecase projection issues; use augmented centroid for projection plane.
-        cent       (geo.sphere.util/centroid (vector (geo.sphere.util/centroid uniq-verts) pt))
-;;      _            (println (format "CENT=%s, CENT_WITH_PT=%s, UBER_CENT=%s" (geo.sphere.util/centroid uniq-verts) (geo.sphere.util/centroid (conj uniq-verts pt)) cent))
-
-        ;; projection plane pt
-        cv         (geo.sphere.xform/latlon->vector cent)
-
-        ;; projection plane unit normal
-        unit-nv    (geo.sphere.xform/unit-normal-vector cent)]
-
-    (loop [xs  uniq-verts
-           acc []]
-      (if-let [x (first xs)]
-        (let [av (mtx/matrix (geo.sphere.util/latlon->cartesian x))]
-          (recur (rest xs) (conj acc (geo.sphere.xform/ortho-plane-projection av cv unit-nv))))
-        (if pt
-          [(geo.sphere.xform/ortho-plane-projection (mtx/matrix (geo.sphere.util/latlon->cartesian pt)) cv unit-nv) acc]
-          [nil acc])))))
-
-(def X 0)
-(def Y 1)
+;; Slow; needs rotation matrix to hold z-axis constant (3d-2d) to work.
+;; Can we find 3d variant??
 
 #_(defn point-in-polygon?
   [pt vertices]
