@@ -55,11 +55,11 @@
         pvtxs        (vertices->projection-plane2 vertices)
         plane-norm   (polygon->normal pvtxs) #_(geo.sphere.xform/polygon->normal pvtxs)]  ;; normal vector of polygon projection plane
     #_(println (format "PROJECTED_VERTICES=%s" pvtx))
-    (let [rot-mtx   (geo.sphere.rot/xy-plane-rotation plane-norm)
+    (let [;;rot-mtx   (geo.sphere.rot/xy-plane-rotation plane-norm)
           rot-alt   (geo.sphere.xform/rotation-matrix plane-norm)]
-      (println (format "ROTATION_MATRIX=%s\nALT_MATRIX=%s" rot-mtx rot-alt))
+      #_(println (format "ROTATION_MATRIX=%s\nALT_MATRIX=%s" rot-mtx rot-alt))
 
-      (mtx/transpose (mtx.op/* geo.const/earth-radius (geo.sphere.xform/rotate rot-mtx (mtx/transpose pvtxs)))))))
+      (mtx/transpose (mtx.op/* geo.const/earth-radius (geo.sphere.xform/rotate rot-alt (mtx/transpose pvtxs)))))))
 
 (defn apply-shoelace
   [pts]
