@@ -4,12 +4,14 @@
             [geo-yoots.sphere.inclusion :as geo.sphere.incl]
             [geo-yoots.sphere.util :as geo.sphere.util]
             [geo-yoots.sphere.transformations :as geo.sphere.xform]
+            [geo-yoots.sphere.rotation :as geo.sphere.rot]
             [clojure.core.matrix :as mtx]
             [clojure.core.matrix.stats :as mtx.stats]
             [clojure.core.matrix.operators :as mtx.op]))
 
 
 
+(mtx/set-current-implementation :vectorz)
 
 
 ;; =============
@@ -126,15 +128,6 @@
 ;;;; - 2 Dimensional  -
 ;;;; ------------------
 
-;; 2d: https://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-
-#_(defn min-distance-to-segment2
-  [pt u v]
-  (/
-    (mtx/det (mtx.op/- v u) (mtx.op/- u pt))
-    (mtx/magnitude (mtx.op/- v u))))
-
-
 
 (defn arc-angle
   "Returns angle between two vectors"
@@ -143,13 +136,12 @@
 
 (defn obtuse
   [av bv]
-  (let [angle (Math/toDegrees (arc-angle av bv))]
+  (let [angle (arc-angle av bv)]
     #_(println (format "ANGLE=%s" angle))
-    (> angle 90.0)))
+    (> angle (/ Math/PI 2))))
 
 (defn -min-distance-to-segment
   [pv u v]
-  ;; 3D: norm(cross(x2-x1 , x1-x0)) / norm(x2-x1)
   (/
     (mtx/magnitude (mtx/cross (mtx.op/- pv u) (mtx.op/- pv v)))
     (mtx/magnitude (mtx.op/- v u))))
@@ -203,16 +195,12 @@
   (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
         ;; Solves antipodal pt -> polygon edgecase projection issues; use augmented centroid for projection plane.
         cent       (geo.sphere.util/centroid (vector (geo.sphere.util/centroid uniq-verts) pt))
-        ;;cent       (geo.sphere.util/centroid uniq-verts)
 
         ;; projection plane pt
         cv         (geo.sphere.xform/latlon->vector cent)
 
         ;; projection plane unit normal
         unit-nv    (geo.sphere.xform/unit-normal-vector cent)
-
-        
-        ;;max-area   (normal-vector-max-area-coordinates unit-nv)
         ]
 
     (loop [xs  uniq-verts
@@ -274,9 +262,8 @@
         ;; TODO: should separate this functionality
         ;; prepare for projection plane rotation
         plane-norm     (polygon->normal pvtxs)
-        rot-mtx        (geo.sphere.xform/rotation-matrix plane-norm)
-        rotated        (mtx/transpose
-                         (mtx.op/* geo.const/earth-radius (geo.sphere.xform/rotate rot-mtx (mtx/transpose pvtxs))))
+        rot-mtx        (geo.sphere.rot/xy-plane-rotation plane-norm)
+        rotated        (mtx/transpose (mtx.op/* geo.const/earth-radius (geo.sphere.xform/rotate rot-mtx (mtx/transpose pvtxs))))
 
         ;;_         (println (format "ROTATED=%s" rotated))
 
@@ -303,8 +290,6 @@
 
 
 
-
-
 ;; =========================
 ;; -  Distances Functions  -
 ;; -------------------------
@@ -321,7 +306,7 @@
 (defn to-polyline
   [])
 
-(defn to-polygon
+#_(defn to-polygon
   [pt vertices]
   (point-in-polygon? pt vertices))
 
