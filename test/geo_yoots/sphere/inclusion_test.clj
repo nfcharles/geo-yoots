@@ -234,7 +234,22 @@
     :out     [[ 0.967166 -1.309784]
               [ 1.411533  0.873626]
               [ 0.129689  1.802141]
-              #_[-0.956165 -2.189761]]))
+              [-0.956165 -2.189761]]))
+
+
+(def polygon-11-testcase
+  (hash-map
+    :polygon [[ 1.000000  0.000000]
+              [ 0.000000  1.000000]
+              [-1.000000  0.000000]
+              [ 0.000000 -1.000000]]
+    :in      [#_[0.000000  0.000000]
+              [0.410995  0.326637]
+              [0.625476 -0.177724]]
+    :out     [[ 0.967166 -1.309784]
+              [ 1.411533  0.873626]
+              [ 0.129689  1.802141]
+              [-0.956165 -2.189761]]))
 
 
 ;; --- Function Helpers
@@ -271,7 +286,8 @@
     (test-point-in-polygon polygon-7-testcase)
     (test-point-in-polygon polygon-8-testcase)
     (test-point-in-polygon polygon-9-testcase)
-    (test-point-in-polygon polygon-10-testcase))
+    (test-point-in-polygon polygon-10-testcase)
+    (test-point-in-polygon polygon-11-testcase))
 
   (testing "Outside"
     (test-point-out-polygon polygon-1-testcase)
@@ -283,4 +299,5 @@
     (test-point-out-polygon polygon-7-testcase)
     (test-point-out-polygon polygon-8-testcase)
     (test-point-out-polygon polygon-9-testcase)
-    (test-point-out-polygon polygon-10-testcase)))
+    (test-point-out-polygon polygon-10-testcase)
+    (test-point-out-polygon polygon-11-testcase)))
