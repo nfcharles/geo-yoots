@@ -56,7 +56,7 @@
 ;;
 
 
-(defn vertices->projection-plane3
+#_(defn vertices->projection-plane3
   [vertices & {:keys [pt] ;; (lat,lon)
                :or {pt nil}}]
   (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
@@ -77,9 +77,9 @@
            acc []]
       (if-let [x (first xs)]
         (let [av (geo.sphere.xform/latlon->vector x)]
-          (recur (rest xs) (conj acc (geo.sphere.xform/ortho-plane-projection av cv unit-nv))))
+          (recur (rest xs) (conj acc (geo.sphere.xform/vector-ortho-plane-projection av cv unit-nv))))
         (if pt ;; (mtx/matrix (geo.sphere.util/latlon->cartesian pt))
-          [(geo.sphere.xform/ortho-plane-projection (geo.sphere.xform/latlon->vector pt) cv unit-nv) acc max-area]
+          [(geo.sphere.xform/vector-ortho-plane-projection (geo.sphere.xform/latlon->vector pt) cv unit-nv) acc max-area]
           [nil acc max-area])))))
 
 
@@ -105,9 +105,9 @@
            acc []]
       (if-let [x (first xs)]
         (let [av (geo.sphere.xform/latlon->vector x)]
-          (recur (rest xs) (conj acc (geo.sphere.xform/ortho-plane-projection av cv unit-nv))))
+          (recur (rest xs) (conj acc (geo.sphere.xform/vector-ortho-plane-projection av cv unit-nv))))
         (if pt ;; (mtx/matrix (geo.sphere.util/latlon->cartesian pt))
-          [(geo.sphere.xform/ortho-plane-projection (geo.sphere.xform/latlon->vector pt) cv unit-nv) acc]
+          [(geo.sphere.xform/vector-ortho-plane-projection (geo.sphere.xform/latlon->vector pt) cv unit-nv) acc]
           [nil acc])))))
 
 
@@ -202,7 +202,7 @@
         (odd? acc)))))
 
 
-(defn point-in-polygon?
+#_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
   (let [[pv projected] (vertices->projection-plane4 vertices :pt pt)       ;; Projected Vertices to Plane
@@ -234,6 +234,23 @@
         ;; If point intersects with odd number of triangles, inside otherwise outside.
         (odd? acc)))))
 
+
+;; TODO: use different matrix impl?
+#_(defn point-in-polygon?
+  "Returns true if point is in polygon, false otherwise"
+  [pt vertices]
+  (let [projected      (geo.sphere.xform/vertices->projection-plane2 vertices :pt pt)
+        pv             (.getRow projected 0)
+        shape          (.getShape projected)
+        triangles      (geo.sphere.xform/matrix-partition-polygon projected (aget shape 0) (aget shape 1))]
+
+    (loop [xs triangles
+           acc 0]
+      (if-let [x (first xs)]
+        (recur (rest xs) (+ acc (if (inside-bary? pv x) 1 0)))
+
+        ;; If point intersects with odd number of triangles, inside, otherwise outside.
+        (odd? acc)))))
 
 #_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"

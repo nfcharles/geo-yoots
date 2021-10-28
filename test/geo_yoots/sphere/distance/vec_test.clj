@@ -178,7 +178,7 @@
 ;; ---
 
 (deftest point-to-polygon-signed-distance-test
-  (let [testcases #_[test-5] [test-1 test-2 test-3 test-4 test-5]]
+  (let [testcases [test-1 test-2 test-3 test-4 test-5]]
     (doseq [[test i] (map vector testcases (range 1 (inc (count testcases))))]
       (doseq [[latlon expected j] (map vector (:points test) (:dists test) (range 1 (inc (count (:points test)))))]
         (testing (format "Polygon Test Case %s.%s: %s" i j latlon)

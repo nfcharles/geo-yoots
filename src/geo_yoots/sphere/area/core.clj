@@ -15,7 +15,7 @@
 (def Y 1)
 (def Z 2)
 
-
+;; TODO: deprecated for matrix method
 (defn vertices->projection-plane2
   [vertices]
   (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
@@ -31,7 +31,7 @@
     (loop [xs  uniq-verts
            acc []]
       (if-let [x (first xs)]
-        (recur (rest xs) (conj acc (geo.sphere.xform/ortho-plane-projection (geo.sphere.xform/latlon->vector x) cv unit-nv)))
+        (recur (rest xs) (conj acc (geo.sphere.xform/vector-ortho-plane-projection (geo.sphere.xform/latlon->vector x) cv unit-nv)))
         (mtx/matrix acc)))))
 
 (defn polygon->normal

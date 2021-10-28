@@ -68,7 +68,10 @@
 ;; - Vector Projections -
 ;; ----------------------
 
-(defn ortho-plane-projection
+
+;; -- TODO: DEPRECATED
+
+(defn vector-ortho-plane-projection
   [av pv unit-normal]
   #_(println (format "ORTHO_PROJECTION: AV[%s], PV[%s], NORMAL[%s]" av pv unit-normal))
   (mtx.op/- av (mtx.op/* (mtx/dot (mtx.op/- av pv) unit-normal) unit-normal)))
@@ -79,7 +82,7 @@
          acc []]
     (if-let [x (first xs)]
       (let [av (mtx/matrix (geo.sphere.util/latlon->cartesian x))]
-        (recur (rest xs) (conj acc (ortho-plane-projection av pv unit-nv))))
+        (recur (rest xs) (conj acc (vector-ortho-plane-projection av pv unit-nv))))
       acc)))
 
 (defn vertices->projection-plane
@@ -90,6 +93,40 @@
       (latlon->vector cent)      ;; projection plane pt
       (unit-normal-vector cent)  ;; projection plane unit normal
       uniq-verts)))
+
+;; -- END DEPRECATED
+
+
+(defn matrix-ortho-plane-projection
+  [pt vertices cent]
+  (let [cv          (latlon->vector cent)      ;; projection plane point
+        unit-normal (unit-normal-vector cent)] ;; projection plane unit normal
+    (loop [xs vertices
+           acc (if pt [(latlon->vector pt)] [])]
+      (if-let [vtx (first xs)]
+        (recur (rest xs) (conj acc (latlon->vector vtx)))
+
+        ;; project point and vertices
+        (let [A   (mtx/matrix acc)
+              A-1 (mtx.op/+ (mtx.op/* -1 cv) A)
+              A-2 (mtx/inner-product A-1 unit-normal)
+              A-3 (mtx/inner-product (mtx/transpose (mtx/matrix [A-2])) (mtx/matrix [unit-normal]))
+              ret (mtx.op/- A A-3)]
+          #_(println (format "ORTHO_MATRIX=%s" ret))
+          ret)))))
+
+(defn vertices->projection-plane2
+  [vertices & {:keys [pt]
+               :or {pt nil}}]
+  (if pt
+    (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
+          ;; Solves antipodal pt -> polygon edgecase projection issues; use augmented centroid for projection plane.
+          cent       (geo.sphere.util/centroid (vector (geo.sphere.util/centroid uniq-verts) pt))]
+      (matrix-ortho-plane-projection pt uniq-verts cent))
+    (let [uniq-verts (geo.util/ensure-unique-vertices vertices)
+          cent       (geo.sphere.util/centroid uniq-verts)]
+      (matrix-ortho-plane-projection pt uniq-verts cent))))
+
 
 
 ;; ----------------------
@@ -109,7 +146,18 @@
           (recur (rest xs) (conj tri x) acc))
         acc))))
 
-
+(defn matrix-partition-polygon
+  "Generates triangular partitions for a polygon"
+  [vtxs n_rows n_cols]
+  (let [anchor (.getRow vtxs 1)]
+    (loop [i   2
+           tri [anchor]
+           acc []]
+      (if (< i n_rows)
+        (if (= (count tri) 2)
+          (recur i [anchor] (conj acc (conj tri (.getRow vtxs i))))
+          (recur (inc i) (conj tri (.getRow vtxs i)) acc))
+        acc))))
 
 ;; =====================
 ;; -  Rotation Matrix  -
