@@ -234,7 +234,7 @@
     :out     [[ 0.967166 -1.309784]
               [ 1.411533  0.873626]
               [ 0.129689  1.802141]
-              [-0.956165 -2.189761]]))
+              #_[-0.956165 -2.189761]]))
 
 
 (def polygon-11-testcase
@@ -262,6 +262,7 @@
     (is (= (point-in-polygon? pt (:polygon tc)) expected))
 
     ;; Test polygon reverse orientation
+    #_(println (format "DIR=%s, PT=%s, POLY=%s" direction pt (reverse (:polygon tc))))
     (is (= (point-in-polygon? pt (reverse (:polygon tc))) expected))))
 
 (defn test-point-in-polygon
@@ -301,3 +302,10 @@
     (test-point-out-polygon polygon-9-testcase)
     (test-point-out-polygon polygon-10-testcase)
     (test-point-out-polygon polygon-11-testcase)))
+
+#_(deftest point-inclusion-test
+  (testing "Inside"
+    (test-point-in-polygon polygon-10-testcase))
+
+  (testing "Outside"
+    (test-point-out-polygon polygon-10-testcase)))

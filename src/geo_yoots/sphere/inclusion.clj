@@ -127,10 +127,11 @@
 (defn same-side?
   [p1 p2 a b]
   (let [ab (geo.sphere.xform/a->b-vector a b)]
-    (>= (mtx/dot
-          (mtx/cross ab (geo.sphere.xform/a->b-vector a p1))
-          (mtx/cross ab (geo.sphere.xform/a->b-vector a p2)))
-	0)))
+    (>= (float
+          (mtx/dot
+            (mtx/cross ab (geo.sphere.xform/a->b-vector a p1))
+            (mtx/cross ab (geo.sphere.xform/a->b-vector a p2))))
+	0.0)))
 
 (defn within-sides?
   [pt [a b c]]
@@ -155,39 +156,55 @@
         dot02 (mtx/dot v0 v2)
         dot11 (mtx/dot v1 v1)
         dot12 (mtx/dot v1 v2)
-        invdm (/ 1 (- (* dot00 dot11) (* dot01 dot01)))
+        dm    (float (- (* dot00 dot11) (* dot01 dot01)))
+        invdm (if (= dm 0.0) Double/POSITIVE_INFINITY (/ 1.0 dm))
         u     (float (* (- (* dot11 dot02) (* dot01 dot12)) invdm))
         v     (float (* (- (* dot00 dot12) (* dot01 dot02)) invdm))]
     (and (>= u 0.0) (>= v 0.0) (< (+ u v) 1.0))))
 
+(defn inside-bary?
+  [pt [a b c]]
+  (let [v0    (mtx.op/- c a)
+        v1    (mtx.op/- b a)
+        v2    (mtx.op/- pt a)
+        dot00 (mtx/dot v0 v0)
+        dot01 (mtx/dot v0 v1)
+        dot02 (mtx/dot v0 v2)
+        dot11 (mtx/dot v1 v1)
+        dot12 (mtx/dot v1 v2)
+        dm    (float (- (* dot00 dot11) (* dot01 dot01)))
+        invdm (/ 1.0 dm)
+        _     (println (format "DM=%s" dm))
+        u     (float (* (- (* dot11 dot02) (* dot01 dot12)) invdm))
+        v     (float (* (- (* dot00 dot12) (* dot01 dot02)) invdm))]
+    (and (>= u 0.0) (>= v 0.0) (< (+ u v) 1.0))))
+
+
+(defn inside-bary?
+  [pt [a b c]]
+  (let [v0    (mtx.op/- c a)
+        v1    (mtx.op/- b a)
+        v2    (mtx.op/- pt a)
+        dot00 (mtx/dot v0 v0)
+        dot01 (mtx/dot v0 v1)
+        dot02 (mtx/dot v0 v2)
+        dot11 (mtx/dot v1 v1)
+        dot12 (mtx/dot v1 v2)
+        dm    (float (- (* dot00 dot11) (* dot01 dot01)))
+        invdm (if (= dm 0.0) Double/POSITIVE_INFINITY (/ 1.0 dm))
+        u     (float (* (- (* dot11 dot02) (* dot01 dot12)) invdm))
+        v     (float (* (- (* dot00 dot12) (* dot01 dot02)) invdm))]
+    (and (>= u 0.0) (>= v 0.0) (< (+ u v) 1.0))))
 
 
 ;;; ===============
 ;;; - Drivers
 ;;; ----
 
-
-
-#_(defn point-in-polygon?
+(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
-  (let [av         (geo.sphere.xform/latlon->vector pt)                    ;; Test Point
-        projected  (geo.sphere.xform/vertices->projection-plane vertices)  ;; Projected Vertices to Plane
-        ;;projected  (rest (vertices->projection-plane3 vertices :pt pt))  ;; Projected Vertices to Plane
-        triangles  (geo.sphere.xform/partition-polygon projected)]         ;; Triangle Partitions
-    (loop [xs triangles
-           acc 0]
-      (if-let [x (first xs)]
-        (recur (rest xs) (+ acc (if (within-sides? av x) 1 0)))
-
-        ;; If point intersects with odd number of triangles, inside otherwise outside.
-        (odd? acc)))))
-
-
-#_(defn point-in-polygon?
-  "Returns true if point is in polygon, false otherwise"
-  [pt vertices]
-  (let [[pv projected] (vertices->projection-plane3 vertices :pt pt)       ;; Projected Vertices to Plane
+  (let [[pv projected] (vertices->projection-plane4 vertices :pt pt)       ;; Projected Vertices to Plane
         triangles      (geo.sphere.xform/partition-polygon projected)      ;; Triangle Partitions
         ;;_              (println (format "TRAIANGLES=%s" triangles))
         ;;av             (geo.sphere.xform/latlon->vector pv)
@@ -202,6 +219,9 @@
         (odd? acc)))))
 
 
+;;
+;;
+;;
 #_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
@@ -218,24 +238,7 @@
         ;; If point intersects with odd number of triangles, inside otherwise outside.
         (odd? acc)))))
 
-(defn point-in-polygon?
-  "Returns true if point is in polygon, false otherwise"
-  [pt vertices]
-  (let [[pv projected] (vertices->projection-plane4 vertices :pt pt)       ;; Projected Vertices to Plane
-        ;;angle-sum      (angle-sum pv projected)
-        triangles      (geo.sphere.xform/partition-polygon projected)      ;; Triangle Partitions
-        ]              ;; Test Point
-    ;;(println (format "ANGLE_SUM=%s" angle-sum))
-    (loop [xs triangles
-           acc 0]
-      (if-let [x (first xs)]
-        (recur (rest xs) (+ acc (if (inside-bary? pv x) 1 0)))
 
-        ;; If point intersects with odd number of triangles, inside otherwise outside.
-        (odd? acc)))))
-
-
-;; TODO: use different matrix impl?
 #_(defn point-in-polygon?
   "Returns true if point is in polygon, false otherwise"
   [pt vertices]
@@ -247,33 +250,16 @@
     (loop [xs triangles
            acc 0]
       (if-let [x (first xs)]
-        (recur (rest xs) (+ acc (if (inside-bary? pv x) 1 0)))
+        (recur (rest xs) (+ acc (if (within-sides? pv x) 1 0)))
 
         ;; If point intersects with odd number of triangles, inside, otherwise outside.
         (odd? acc)))))
 
-#_(defn point-in-polygon?
-  "Returns true if point is in polygon, false otherwise"
-  [pt vertices]
-  (let [[pv projected] (vertices->projection-plane3 vertices :pt pt)  ;; Projected Vertices to Plane
-        angle-sum      (angle-sum pv projected)]
-    (println (format "ANGLE_SUM=(%s, %s)" twopi angle-sum))
-    (<= (Math/abs (- twopi angle-sum)) epsilon)))
 
 
-#_(defn point-in-polygon?
-  "Crossings impl"
-  [pt vertices]
-  (let [[pv pvtx [_1 _2]] (vertices->projection-plane3 vertices :pt pt)]
-    ;; _1 & _2 are the plane normal coordinates that maximize plane area; this
-    ;; is the conversion from 3d to 2d to in order to use the `point-in-path` algo.
-    (loop [xs  pvtx
-           acc []]
-      (if-let [vtx (first xs)]
-        ;; TODO: We can optimize the double iteration by encoding the (_1, _2) coordinates
-        ;; in the `point-in-path` implementation above.  This will ensure we only do 1 iteration
-        (recur (rest xs) (conj acc [(.get vtx _1) (.get vtx _2)]))
-        (point-in-path? (.get pv _1) (.get pv _2) acc)))))
+
+
+
 
 
 
@@ -346,9 +332,7 @@
   (println (format "(%s, %s), matched=%s" x y (= expected (point-in-path? x y test-poly)) )))
 
 
-;; Slow; needs rotation matrix to hold z-axis constant (3d-2d) to work.
-;; Can we find 3d variant?? DEPRECATED
-
+;; Slow compared to other impls. Can we speed up??
 #_(defn point-in-polygon?
   [pt vertices]
   (let [[pv pvtx _]   (vertices->projection-plane3 vertices :pt pt)
