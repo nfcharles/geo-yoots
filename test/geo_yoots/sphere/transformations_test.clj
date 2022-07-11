@@ -26,7 +26,7 @@
 
 (defn -test-ortho-plane-projection
   [pt plane unit-v expected]
-  (is (= (ortho-plane-projection pt plane unit-v) expected)))
+  (is (= (vector-ortho-plane-projection pt plane unit-v) expected)))
 
 
 
